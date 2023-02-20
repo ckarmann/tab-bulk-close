@@ -204,3 +204,21 @@ function handleBoxDragLeave(e) {
         this.classList.remove('over');
     }
 }
+
+
+// Handle all clicks
+document.addEventListener("click", (e) => {
+
+    console.log(e);
+
+    if (e.target.id == "add-group-button") {
+        let newGroupName = document.getElementById('add-group-name').value;
+        addGroup(newGroupName);
+    }
+});
+
+
+async function addGroup(newGroupName) {
+    let state = await StateService.addGroupAndSave(newGroupName);
+    listTabs(state);
+}

@@ -85,7 +85,7 @@ export default {
 
     saveState : async function (state) {
         let stateObject = {
-            "objects": state.objects,
+            "groups": state.groups,
             "mapping": state.mapping,
             "urlDates": state.urlDates,
             "urlLock": state.urlLock
@@ -96,7 +96,13 @@ export default {
     setDomainGroupAndSave: async function(domain, newGroup) {
         const state = await this.loadState();
         state.mapping[domain] = newGroup;
-        console.log(state);
+        await this.saveState(state);
+        return state;
+    },
+
+    addGroupAndSave: async function(newGroupName) {
+        const state = await this.loadState();
+        state.groups.unshift(newGroupName);
         await this.saveState(state);
         return state;
     }
