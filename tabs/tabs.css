@@ -1,0 +1,82 @@
+html, body {
+    width: 900px;
+    max-width: 900px;
+}
+
+html {
+    overflow-x: hidden;
+    font-family:'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+    font-size: 90%;
+}
+
+.switch-tabs {
+    padding-left: 10px;
+}
+
+h2.group-title {
+    background-color: orange;
+    margin: 0;
+    padding: 0.1em 1em;
+    flex-grow: 1;
+}
+
+.groupHeader {
+    display: flex;
+}
+
+li {
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    list-style-type: none;
+}
+
+
+.panel {
+    margin: 5px;
+}
+
+
+.group-box {
+    border: 3px solid #eee;
+}
+
+
+.group-box.over {
+    border: 3px dotted #666;
+}
+
+.panel-top-drop {
+    width: 200px;
+    position: fixed;
+    right:0;
+    top:0;
+    background-color:white;
+    box-shadow: 2px 2px #888;
+}
+
+.group-shortcut {
+    text-align: center;
+    padding: 1em;
+    border: 1px solid grey;
+    cursor: pointer;
+}
+
+.group-shortcut.over {
+    background-color: #bbb;
+}
+
+.group-shortcut:hover {
+    background-color: orangered;
+}
+
+.lock {
+    cursor: pointer;
+}
+
+.locked {
+    color:#000;
+}
+
+.unlocked {
+    color: #999;
+}
