@@ -1,14 +1,14 @@
 export default {
     State: function(groups, mapping, urlDates, urlLock) {
-        this.groups = groups;
-        this.mapping = mapping;
+        this.groups = groups || [ "Others" ];
+        this.mapping = mapping || {};
         this.urlDates = urlDates || {};
         this.urlLock = urlLock || {};
 
         function cleanMapping(mapping, groups) {
     
             for (let domain of Object.keys(mapping)) {
-                group = mapping[domain];
+                const group = mapping[domain];
                 if (!groups.includes(group)) {
                     console.log("Mapping lost: " + domain + " => " + group);
                     delete mapping[domain];
@@ -81,5 +81,23 @@ export default {
     loadState : async function () {
         const state = await browser.storage.local.get(["groups", "mapping", "urlDates", "urlLock"])
         return new this.State(state.groups, state.mapping, state.urlDates, state.urlLock);
+    },
+
+    saveState : async function (state) {
+        let stateObject = {
+            "objects": state.objects,
+            "mapping": state.mapping,
+            "urlDates": state.urlDates,
+            "urlLock": state.urlLock
+        }
+        await browser.storage.local.set(stateObject);
+    },
+
+    setDomainGroupAndSave: async function(domain, newGroup) {
+        const state = await this.loadState();
+        state.mapping[domain] = newGroup;
+        console.log(state);
+        await this.saveState(state);
+        return state;
     }
 }

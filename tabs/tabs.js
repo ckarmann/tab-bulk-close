@@ -62,8 +62,8 @@ function refresh(tabs, state) {
             domainList.dataset.domain = domain;
             domainList.textContent = domain;
             domainList.appendChild(domainUl);
-            // domainList.addEventListener('dragstart', handleDragStart);
-            // domainList.addEventListener('dragend', handleDragEnd);
+            domainList.addEventListener('dragstart', handleDragStart);
+            domainList.addEventListener('dragend', handleDragEnd);
             tabUl.append(domainList);
 
             domainMap[domain].sort(function(a, b){
@@ -128,16 +128,16 @@ function refresh(tabs, state) {
         thisGroupBox.appendChild(tabList);
 
         // handle drag-drop
-        // thisGroupBox.addEventListener('dragover', handleBoxDragOver);
-        // thisGroupBox.addEventListener('dragenter', handleBoxDragEnter);
-        // thisGroupBox.addEventListener('dragleave', handleBoxDragLeave);
-        // thisGroupBox.addEventListener('drop', handleDrop);
-        // thisGroupBox.dragCount = 0;
-        // thisGroupShortCut.addEventListener('dragover', handleBoxDragOver);
-        // thisGroupShortCut.addEventListener('dragenter', handleBoxDragEnter);
-        // thisGroupShortCut.addEventListener('dragleave', handleBoxDragLeave);
-        // thisGroupShortCut.addEventListener('drop', handleDrop);
-        // thisGroupShortCut.dragCount = 0;
+        thisGroupBox.addEventListener('dragover', handleBoxDragOver);
+        thisGroupBox.addEventListener('dragenter', handleBoxDragEnter);
+        thisGroupBox.addEventListener('dragleave', handleBoxDragLeave);
+        thisGroupBox.addEventListener('drop', handleDrop);
+        thisGroupBox.dragCount = 0;
+        thisGroupShortCut.addEventListener('dragover', handleBoxDragOver);
+        thisGroupShortCut.addEventListener('dragenter', handleBoxDragEnter);
+        thisGroupShortCut.addEventListener('dragleave', handleBoxDragLeave);
+        thisGroupShortCut.addEventListener('drop', handleDrop);
+        thisGroupShortCut.dragCount = 0;
 
         groupsFragment.appendChild(thisGroupBox);
         shortcutFragment.appendChild(thisGroupShortCut);
@@ -150,3 +150,57 @@ function refresh(tabs, state) {
 
 document.addEventListener("DOMContentLoaded", init);
 
+
+// Drag and drop of domains over groups
+let dragSrcEl;
+
+function handleDragStart(e) {
+    this.style.opacity = '0.4';
+
+    dragSrcEl = this;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('domain', this.dataset.domain);
+}
+
+function handleDragEnd(e) {
+    this.style.opacity = '1';
+    let boxes = document.querySelectorAll('.group-box');
+    boxes.forEach(function (box) {
+        box.classList.remove('over');
+    });
+}
+
+async function moveDomainToGroup(newGroup, domain) {
+    let state = await StateService.setDomainGroupAndSave(domain, newGroup);
+    listTabs(state);
+}
+
+function handleDrop(e) {
+    // "this" is the category box in which to drop the domain.
+    e.stopPropagation(); // stops the browser from redirecting.
+
+    let newGroup = this.dataset.group;
+    let domain = e.dataTransfer.getData('domain');
+
+    moveDomainToGroup(newGroup, domain);
+
+    return false;
+}
+
+
+function handleBoxDragOver(e) {
+    e.preventDefault();
+    return false;
+}
+
+function handleBoxDragEnter(e) {
+    this.classList.add('over');
+    this.dragCount++;
+}
+
+function handleBoxDragLeave(e) {
+    this.dragCount--;
+    if (this.dragCount == 0) {
+        this.classList.remove('over');
+    }
+}
