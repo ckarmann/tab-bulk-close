@@ -1,5 +1,6 @@
 import { setDirtyAndRefresh, refreshNow } from './tabs_view.js';
 import StateService from '/js/state_service.js'
+import TabsService from '/js/tabs_service.js'
 
 document.addEventListener("DOMContentLoaded", setDirtyAndRefresh);
 
@@ -87,13 +88,133 @@ document.addEventListener("click", (e) => {
         const groupBox = document.querySelector('.group-box[data-group="' + group + '"]');
         groupBox.scrollIntoView();
     }
+    else if (e.target.classList.contains('extract-group')) {
+        extractGroup(e.target.dataset.group);
+    }
+    else if (e.target.classList.contains('ungroup-group')) {
+        ungroup(e.target.dataset.group);
+    }
+    else if (e.target.classList.contains('close-group')) {
+        closeGroup(e.target.dataset.group);
+    }
+
     e.preventDefault();
 });
+
+
+// group actions
+
+async function extractGroup(group) {
+    console.log("extract " + group);
+
+    let state = await StateService.loadState();
+    let tabs = await TabsService.getAllTabs();
+
+    const [_, groupMap, domainMap] = state.applyGrouping(tabs);
+    let domains = groupMap[group];
+
+    let tabIds = [];
+    let windowIds = new Set();
+    for (let domain of domains) {
+        for (let tab of domainMap[domain]) {
+
+            tabIds.push(tab.id);
+            windowIds.add(tab.windowId);
+        }
+    }
+    if (windowIds.size == 1) {
+        // already in one window.
+        let [windowId] = windowIds;
+
+        let windowInfo = await browser.windows.get(windowId, { populate: true });
+        if (windowInfo.tabs.length == tabIds.length) {
+            // no other tab in the window, useless to create a new one, just focus on the old.
+
+            browser.windows.update(windowId, {
+                focused: true
+            });
+            browser.tabs.update(tabIds[0], {
+                active: true
+            });
+            return;
+        }
+    }
+    
+
+    let windowInfo = await browser.windows.create({
+        focused: true,
+        tabId: tabIds[0]
+    });
+    await browser.tabs.move(tabIds, {
+        windowId: windowInfo.id,
+        index: -1
+    })
+    //browser.tabs.remove()
+
+}
+
+
+async function closeGroup(groupName) {
+    let state = await StateService.loadState();
+
+    let mapping = state.mapping;
+    let lockedUrls = state.lockedUrls;
+
+    TabsService.getAllTabs().then((tabs) => {
+        for (let tab of tabs) {
+            let urlString = tab.url;
+            if (!lockedUrls.includes(urlString)) {
+
+                let url = new URL(urlString);
+                let domain = url.hostname;
+                // handle stuff like about: pages.
+                if (domain === '') {
+                    domain = urlString;
+                }
+                let domainGroup = mapping[domain]
+                if (domainGroup == groupName) {
+                    console.log("Remove tab " + tab.id);
+                    browser.tabs.remove(tab.id);
+                }
+            }
+        }
+    });
+}
+
 
 // group management
 async function addGroup(newGroupName) {
     await StateService.addGroupAndSave(newGroupName);
     refreshNow();
+}
+
+
+function cleanMapping(mapping, groups) {
+    
+    for (let domain of Object.keys(mapping)) {
+        var group = mapping[domain];
+        if (!groups.includes(group)) {
+            console.log("Mapping lost: " + domain + " => " + group);
+            delete mapping[domain];
+        }
+    }
+}
+
+async function ungroup(groupName) {
+    let state = await StateService.loadState();
+
+    let groups = state.groups;
+    let mapping = state.mapping;
+
+    const groupIndex = groups.indexOf(groupName);
+    if (groupIndex > -1) {
+        groups.splice(groupIndex, 1);
+
+        cleanMapping(mapping, groups);
+
+        await StateService.saveState(state);
+        refreshNow();
+    }
 }
 
 

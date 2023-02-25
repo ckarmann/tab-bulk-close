@@ -1,9 +1,9 @@
 export default {
-    State: function(groups, mapping, urlDates, urlLock) {
+    State: function(groups, mapping, urlDates, lockedUrls) {
         this.groups = groups || [ "Others" ];
         this.mapping = mapping || {};
         this.urlDates = urlDates || {};
-        this.urlLock = urlLock || {};
+        this.lockedUrls = lockedUrls || [];
 
         function cleanMapping(mapping, groups) {
     
@@ -79,8 +79,8 @@ export default {
     },
 
     loadState : async function () {
-        const state = await browser.storage.local.get(["groups", "mapping", "urlDates", "urlLock"])
-        return new this.State(state.groups, state.mapping, state.urlDates, state.urlLock);
+        const state = await browser.storage.local.get(["groups", "mapping", "urlDates", "lockedUrls"])
+        return new this.State(state.groups, state.mapping, state.urlDates, state.lockedUrls);
     },
 
     saveState : async function (state) {
@@ -88,7 +88,7 @@ export default {
             "groups": state.groups,
             "mapping": state.mapping,
             "urlDates": state.urlDates,
-            "urlLock": state.urlLock
+            "lockedUrls": state.lockedUrls
         }
         await browser.storage.local.set(stateObject);
     },
