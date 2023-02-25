@@ -82,6 +82,11 @@ document.addEventListener("click", (e) => {
             });
         });
     }
+    else if (e.target.classList.contains('group-shortcut')) {
+        var group = e.target.dataset.group;
+        const groupBox = document.querySelector('.group-box[data-group="' + group + '"]');
+        groupBox.scrollIntoView();
+    }
     e.preventDefault();
 });
 
