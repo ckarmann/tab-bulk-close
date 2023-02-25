@@ -26,7 +26,7 @@ function delay(milliseconds) {
 
 async function refresh() {
     if (isDirty) {
-        console.log("--------- init");
+        console.log("--------- refresh");
         const state = await StateService.loadState();
         console.log(state);
         listTabs(state);

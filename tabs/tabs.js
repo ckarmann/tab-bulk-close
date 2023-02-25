@@ -149,33 +149,19 @@ async function extractGroup(group) {
         windowId: windowInfo.id,
         index: -1
     })
-    //browser.tabs.remove()
-
 }
 
 
 async function closeGroup(groupName) {
     let state = await StateService.loadState();
 
-    let mapping = state.mapping;
-    let lockedUrls = state.lockedUrls;
-
     TabsService.getAllTabs().then((tabs) => {
         for (let tab of tabs) {
             let urlString = tab.url;
-            if (!lockedUrls.includes(urlString)) {
 
-                let url = new URL(urlString);
-                let domain = url.hostname;
-                // handle stuff like about: pages.
-                if (domain === '') {
-                    domain = urlString;
-                }
-                let domainGroup = mapping[domain]
-                if (domainGroup == groupName) {
-                    console.log("Remove tab " + tab.id);
-                    browser.tabs.remove(tab.id);
-                }
+            if (!state.isLocked(urlString) && state.isTabInGroup(urlString, groupName)) {
+                console.log("Remove tab " + tab.id);
+                browser.tabs.remove(tab.id);
             }
         }
     });
@@ -189,30 +175,8 @@ async function addGroup(newGroupName) {
 }
 
 
-function cleanMapping(mapping, groups) {
-    
-    for (let domain of Object.keys(mapping)) {
-        var group = mapping[domain];
-        if (!groups.includes(group)) {
-            console.log("Mapping lost: " + domain + " => " + group);
-            delete mapping[domain];
-        }
-    }
-}
-
 async function ungroup(groupName) {
-    let state = await StateService.loadState();
-
-    let groups = state.groups;
-    let mapping = state.mapping;
-
-    const groupIndex = groups.indexOf(groupName);
-    if (groupIndex > -1) {
-        groups.splice(groupIndex, 1);
-
-        cleanMapping(mapping, groups);
-
-        await StateService.saveState(state);
+    if (await StateService.removeGroupAndSave(groupName)) {
         refreshNow();
     }
 }

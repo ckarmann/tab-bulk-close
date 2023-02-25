@@ -1,3 +1,15 @@
+function cleanMapping(mapping, groups) {
+    
+    for (let domain of Object.keys(mapping)) {
+        const group = mapping[domain];
+        if (!groups.includes(group)) {
+            console.log("Mapping lost: " + domain + " => " + group);
+            delete mapping[domain];
+        }
+    }
+}
+
+
 export default {
     State: function(groups, mapping, urlDates, lockedUrls) {
         this.groups = groups || [ "Others" ];
@@ -5,15 +17,19 @@ export default {
         this.urlDates = urlDates || {};
         this.lockedUrls = lockedUrls || [];
 
-        function cleanMapping(mapping, groups) {
-    
-            for (let domain of Object.keys(mapping)) {
-                const group = mapping[domain];
-                if (!groups.includes(group)) {
-                    console.log("Mapping lost: " + domain + " => " + group);
-                    delete mapping[domain];
-                }
+        this.isLocked = function(urlString) {
+            return lockedUrls.includes(urlString);
+        }
+
+        this.isTabInGroup = function(urlString, groupName) {
+            let url = new URL(urlString);
+            let domain = url.hostname;
+            // handle stuff like about: pages.
+            if (domain === '') {
+                domain = urlString;
             }
+            let domainGroup = mapping[domain]
+            return domainGroup == groupName;
         }
 
         this.applyGrouping = function(tabs) {
@@ -105,5 +121,23 @@ export default {
         state.groups.unshift(newGroupName);
         await this.saveState(state);
         return state;
+    },
+
+    removeGroupAndSave: async function(groupName) {
+        const state = await this.loadState();
+
+        let groups = state.groups;
+        let mapping = state.mapping;
+
+        const groupIndex = groups.indexOf(groupName);
+        if (groupIndex > -1) {
+            groups.splice(groupIndex, 1);
+
+            cleanMapping(mapping, groups);
+
+            await this.saveState(state);
+            return true;
+        }
+        return false;
     }
 }
