@@ -1,19 +1,40 @@
 import StateService from '/js/state_service.js'
 import TabsService from '/js/tabs_service.js'
 
-async function init() {
-    console.log("init");
-    const state = await StateService.loadState();
+// Mechanism to trigger refreshes of the page, only when there is a change.
+var isDirty = true;
 
-    console.log(state);
-    listTabs(state);
+async function setDirtyAndRefresh(delayMs) {
+    isDirty = true;
+    if (delayMs == 0) {
+        refresh();
+    } else {
+        delay(delayMs).then(refresh);
+    }
 }
 
+function delay(milliseconds) {
+    return new Promise(resolve => {
+        setTimeout(resolve, milliseconds);
+    });
+}
+
+async function refresh() {
+    if (isDirty) {
+        console.log("--------- init");
+        const state = await StateService.loadState();
+        console.log(state);
+        listTabs(state);    
+    }
+    isDirty = false;
+}
+
+// page refresh implementation.
 function listTabs(state) {
-    TabsService.getAllTabs().then((tabs) => refresh(tabs, state));
+    TabsService.getAllTabs().then((tabs) => refreshDisplay(tabs, state));
 }
 
-function refresh(tabs, state) {
+function refreshDisplay(tabs, state) {
     console.log(tabs);
     const [groups, groupMap, domainMap] = state.applyGrouping(tabs);
 
@@ -148,7 +169,7 @@ function refresh(tabs, state) {
     document.getElementById('drop-groups-shortcuts').replaceChildren(shortcutFragment);
 }
 
-document.addEventListener("DOMContentLoaded", init);
+document.addEventListener("DOMContentLoaded", setDirtyAndRefresh);
 
 
 // Drag and drop of domains over groups
@@ -232,8 +253,33 @@ document.addEventListener("click", (e) => {
     e.preventDefault();
 });
 
-
+// group management
 async function addGroup(newGroupName) {
     let state = await StateService.addGroupAndSave(newGroupName);
     listTabs(state);
 }
+
+
+// Listeners for tab activity
+browser.tabs.onCreated.addListener((tab) => {
+    console.log(`The tab with id: ${tab.id}, is being created.`);
+    tab.createdAt = Date.now();
+    setDirtyAndRefresh(250);
+});
+
+
+browser.tabs.onRemoved.addListener((tabId, removeInfo) => {
+    console.log(`The tab with id: ${tabId}, is closing`);
+    setDirtyAndRefresh(250);
+});
+
+browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+    if ("url" in changeInfo) {
+        console.log(`Tab with id: ${tabId} was set to URL: ${changeInfo.url}`);
+        setDirtyAndRefresh(0);
+    }
+    if ("title" in changeInfo) {
+        console.log(`Tab with id: ${tabId} was set the title: ${changeInfo.title}`);
+        setDirtyAndRefresh(0);
+    }
+})
