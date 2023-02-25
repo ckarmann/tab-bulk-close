@@ -139,5 +139,17 @@ export default {
             return true;
         }
         return false;
+    },
+
+    toggleLock : async function(url) {
+        console.log("toggle " + url);
+        const state = await this.loadState();
+        const index = state.lockedUrls.indexOf(url);
+        if (index > -1) {
+            state.lockedUrls.splice(index);
+        } else {
+            state.lockedUrls.push(url);
+        }
+        await this.saveState(state);
     }
 }

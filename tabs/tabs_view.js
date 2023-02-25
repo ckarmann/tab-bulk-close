@@ -107,7 +107,7 @@ export function refreshDisplay(tabs, state) {
                 tabLock.classList.add("lock");
                 tabLock.dataset.url = tab.url;
 
-                if (state.lockedUrls.includes(tab.url)) {
+                if (state.isLocked(tab.url)) {
                     tabLock.innerHTML = "&#x1F512;&#xFE0E;";
                     tabLock.classList.add("locked");
                 } else {

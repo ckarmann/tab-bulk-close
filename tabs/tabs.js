@@ -97,9 +97,19 @@ document.addEventListener("click", (e) => {
     else if (e.target.classList.contains('close-group')) {
         closeGroup(e.target.dataset.group);
     }
+    else if (e.target.classList.contains('lock')) {
+        var url = e.target.dataset.url;
+        toggleLock(url);
+    }
 
     e.preventDefault();
 });
+
+// locking
+async function toggleLock(url) {
+    await StateService.toggleLock(url);
+    refreshNow();
+}
 
 
 // group actions
