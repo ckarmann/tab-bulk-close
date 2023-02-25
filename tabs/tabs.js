@@ -211,10 +211,25 @@ document.addEventListener("click", (e) => {
 
     console.log(e);
 
+    // group management
     if (e.target.id == "add-group-button") {
         let newGroupName = document.getElementById('add-group-name').value;
         addGroup(newGroupName);
+    } 
+    // click on links to switch to the link's tab.
+    else if (e.target.classList.contains('switch-tabs')) {
+        var tabId = +e.target.dataset.tabId;
+
+        browser.tabs.get(tabId).then((tab) => {
+            browser.windows.update(tab.windowId, {
+                focused: true
+            });
+            browser.tabs.update(tabId, {
+                active: true
+            });
+        });
     }
+    e.preventDefault();
 });
 
 
