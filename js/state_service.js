@@ -146,7 +146,7 @@ export default {
         const state = await this.loadState();
         const index = state.lockedUrls.indexOf(url);
         if (index > -1) {
-            state.lockedUrls.splice(index);
+            state.lockedUrls.splice(index, 1);
         } else {
             state.lockedUrls.push(url);
         }
