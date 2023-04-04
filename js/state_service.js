@@ -15,7 +15,8 @@ export default {
         this.groups = groups || [ "Others" ];
         this.mapping = mapping || {};
         this.urlDates = urlDates || {};
-        this.lockedUrls = lockedUrls || [];
+        lockedUrls = lockedUrls || [];
+        this.lockedUrls = lockedUrls;
 
         this.isLocked = function(urlString) {
             return lockedUrls.includes(urlString);
