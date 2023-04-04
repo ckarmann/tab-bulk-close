@@ -123,16 +123,19 @@ export function refreshDisplay(tabs, state) {
                 //console.log(tabLink);
                 tabLink.dataset.tabId = tab.id;
 
-                // let tabDomainSpan = document.createElement('span');
-                // tabDomainSpan.textContent = domain;
-                // tabLi.appendChild(tabDomainSpan);
                 const accessDateSpan = document.createElement('span');
-                accessDateSpan.textContent = new Date(tab.lastAccessed).toLocaleDateString();
+                if (tab.lastAccessed !== undefined) {
+                    accessDateSpan.textContent = new Date(tab.lastAccessed).toLocaleDateString();
+                    accessDateSpan.classList.add('date');
+                    accessDateSpan.classList.add('access-date');
+                }
 
                 const updateDateSpan = document.createElement('span');
                 if (state.urlDates[tab.url] !== undefined) {
                     //console.log(urlDates[tab.url]);
                     updateDateSpan.textContent = new Date(state.urlDates[tab.url]).toLocaleDateString();
+                    accessDateSpan.classList.add('date');
+                    accessDateSpan.classList.add('update-date');
                 }
 
                 tabLi.appendChild(tabLock);
