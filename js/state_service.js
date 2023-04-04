@@ -143,7 +143,6 @@ export default {
     },
 
     toggleLock : async function(url) {
-        console.log("toggle " + url);
         const state = await this.loadState();
         const index = state.lockedUrls.indexOf(url);
         if (index > -1) {
@@ -154,9 +153,18 @@ export default {
         await this.saveState(state);
     },
 
-    setRefreshDate: async function(url, date) {
+    setRefreshDate: async function(url, date, liveUrls) {
+        // load
         const state = await this.loadState();
+
+        // clean old stuff.
+        const cleanedDates = Object.fromEntries(liveUrls.map(url => [url, state.urlDates[url]]));
+        state.urlDates = cleanedDates;
+
+        // set new date
         state.urlDates[url] = date;
+
+        // save
         await this.saveState(state);
     }
 }

@@ -190,11 +190,21 @@ async function ungroup(groupName) {
     }
 }
 
+async function getLiveUrls() {
+    let tabs = await TabsService.getAllTabs();
+    let urls = []
+    for (let tab of tabs) {
+        urls.push(tab.url)
+    }
+    return urls;
+}
+
 
 async function setRefreshDate(urlString, date) {
     let url = new URL(urlString);
     url.hash = "";
-    await StateService.setRefreshDate(url.toString(), date);
+    let liveUrls = await getLiveUrls();
+    await StateService.setRefreshDate(url.toString(), date, liveUrls);
 }
 
 
@@ -211,10 +221,10 @@ browser.tabs.onRemoved.addListener((tabId, removeInfo) => {
     setDirtyAndRefresh(250);
 });
 
-browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+browser.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
     if ("url" in changeInfo) {
         console.log(`Tab with id: ${tabId} was set to URL: ${changeInfo.url}`);
-        setRefreshDate(changeInfo.url, Date.now());
+        await setRefreshDate(changeInfo.url, Date.now());
         refreshNow();
     }
     if ("title" in changeInfo) {
