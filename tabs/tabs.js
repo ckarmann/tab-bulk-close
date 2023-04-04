@@ -168,7 +168,7 @@ async function closeGroup(groupName) {
         for (let tab of tabs) {
             let urlString = tab.url;
 
-            if (!state.isLocked(urlString) && state.isTabInGroup(urlString, groupName)) {
+            if (!tab.pinned && !state.isLocked(urlString) && state.isTabInGroup(urlString, groupName)) {
                 console.log("Remove tab " + tab.id);
                 browser.tabs.remove(tab.id);
             }

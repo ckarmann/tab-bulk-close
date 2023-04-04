@@ -80,3 +80,7 @@ li {
 .unlocked {
     color: #999;
 }
+
+.locked-pinned {
+    color: darkred;
+  }
