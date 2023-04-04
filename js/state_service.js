@@ -152,5 +152,11 @@ export default {
             state.lockedUrls.push(url);
         }
         await this.saveState(state);
+    },
+
+    setRefreshDate: async function(url, date) {
+        const state = await this.loadState();
+        state.urlDates[url] = date;
+        await this.saveState(state);
     }
 }

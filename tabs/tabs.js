@@ -41,7 +41,6 @@ export function handleDrop(e) {
     return false;
 }
 
-
 export function handleBoxDragOver(e) {
     e.preventDefault();
     return false;
@@ -192,6 +191,13 @@ async function ungroup(groupName) {
 }
 
 
+async function setRefreshDate(urlString, date) {
+    let url = new URL(urlString);
+    url.hash = "";
+    await StateService.setRefreshDate(url.toString(), date);
+}
+
+
 // Listeners for tab activity
 browser.tabs.onCreated.addListener((tab) => {
     console.log(`The tab with id: ${tab.id}, is being created.`);
@@ -208,6 +214,7 @@ browser.tabs.onRemoved.addListener((tabId, removeInfo) => {
 browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     if ("url" in changeInfo) {
         console.log(`Tab with id: ${tabId} was set to URL: ${changeInfo.url}`);
+        setRefreshDate(changeInfo.url, Date.now());
         refreshNow();
     }
     if ("title" in changeInfo) {

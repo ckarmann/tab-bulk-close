@@ -103,6 +103,10 @@ export function refreshDisplay(tabs, state) {
                 let tabLink = document.createElement('a');
                 tabLi.className = "tabList";
 
+                let urlObject = new URL(tab.url);
+                urlObject.hash = "";
+                let urlWithoutHash = urlObject.toString();
+
                 const tabLock = document.createElement("span");
                 tabLock.classList.add("lock");
                 tabLock.dataset.url = tab.url;
@@ -131,9 +135,9 @@ export function refreshDisplay(tabs, state) {
                 }
 
                 const updateDateSpan = document.createElement('span');
-                if (state.urlDates[tab.url] !== undefined) {
+                if (state.urlDates[urlWithoutHash] !== undefined) {
                     //console.log(urlDates[tab.url]);
-                    updateDateSpan.textContent = new Date(state.urlDates[tab.url]).toLocaleDateString();
+                    updateDateSpan.textContent = new Date(state.urlDates[urlWithoutHash]).toLocaleDateString();
                     accessDateSpan.classList.add('date');
                     accessDateSpan.classList.add('update-date');
                 }
