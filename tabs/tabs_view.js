@@ -98,14 +98,14 @@ export function refreshDisplay(tabs, state) {
                 return 0;
             });
 
+            const duplicateTabs = findDuplicateTabs(domainMap[domain]);
+
             for (let tab of domainMap[domain]) {
                 let tabLi = document.createElement("li");
                 let tabLink = document.createElement('a');
                 tabLi.className = "tabList";
 
-                let urlObject = new URL(tab.url);
-                urlObject.hash = "";
-                let urlWithoutHash = urlObject.toString();
+                let urlWithoutHash = getUrlWithoutHash(tab.url);
 
                 const tabLock = document.createElement("span");
                 tabLock.classList.add("lock");
@@ -146,8 +146,15 @@ export function refreshDisplay(tabs, state) {
                     accessDateSpan.classList.add('update-date');
                 }
 
+                const duplicateSpan = document.createElement('span');
+                if (duplicateTabs.includes(tab)) {
+                    duplicateSpan.textContent = "duplicate";
+                    duplicateSpan.classList.add('duplicate-tab');
+                }
+
                 tabLi.appendChild(tabLock);
                 tabLi.appendChild(tabLink);
+                tabLi.appendChild(duplicateSpan);
                 tabLi.appendChild(accessDateSpan);
                 tabLi.appendChild(updateDateSpan);
                 domainUl.appendChild(tabLi);
@@ -183,3 +190,28 @@ export function refreshDisplay(tabs, state) {
     document.getElementById('tab-groups').replaceChildren(groupsFragment);
     document.getElementById('drop-groups-shortcuts').replaceChildren(shortcutFragment);
 }
+
+
+function findDuplicateTabs(tabs) {
+    const duplicateTabs = []
+    for (let i = 0; i< tabs.length; i++) {
+        for (let j = 0; j < tabs.length; j++) {
+            if (i !== j) {
+                if (getUrlWithoutHash(tabs[i].url) === getUrlWithoutHash(tabs[j].url)) {
+                    duplicateTabs.push(tabs[i]);
+                    break;
+                }
+            }
+        }
+    }
+    return duplicateTabs;
+}
+
+
+function getUrlWithoutHash(url) {
+    let urlObject = new URL(url);
+    urlObject.hash = "";
+    let urlWithoutHash = urlObject.toString();
+    return urlWithoutHash;
+}
+
