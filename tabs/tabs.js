@@ -6,18 +6,18 @@ document.addEventListener("DOMContentLoaded", setDirtyAndRefresh);
 
 
 // Drag and drop of domains over groups
-let dragSrcEl;
 
 export function handleDragStart(e) {
-    this.style.opacity = '0.4';
+    const target = e.target;
+    target.style.opacity = '0.4';
 
-    dragSrcEl = this;
     e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('domain', this.dataset.domain);
+    e.dataTransfer.setData('domain', target.dataset.domain);
 }
 
 export function handleDragEnd(e) {
-    this.style.opacity = '1';
+    const target = e.target;
+    target.style.opacity = '1';
     let boxes = document.querySelectorAll('.group-box');
     boxes.forEach(function (box) {
         box.classList.remove('over');
@@ -30,15 +30,17 @@ async function moveDomainToGroup(newGroup, domain) {
 }
 
 export function handleDrop(e) {
-    // "this" is the category box in which to drop the domain.
     e.stopPropagation(); // stops the browser from redirecting.
 
-    let newGroup = this.dataset.group;
-    let domain = e.dataTransfer.getData('domain');
+    const target = e.target.closest(".drop-target");
+    if (target) {
+        let newGroup = target.dataset.group;
+        let domain = e.dataTransfer.getData('domain');
 
-    moveDomainToGroup(newGroup, domain);
+        moveDomainToGroup(newGroup, domain);
 
-    return false;
+        return false;
+    }
 }
 
 export function handleBoxDragOver(e) {
@@ -47,16 +49,34 @@ export function handleBoxDragOver(e) {
 }
 
 export function handleBoxDragEnter(e) {
-    this.classList.add('over');
-    this.dragCount++;
+    const target = e.target.closest(".drop-target")
+    if (target) {
+        target.classList.add('over');
+        if (target.dragCount === undefined) {
+            target.dragCount = 1;
+        } else {
+            target.dragCount++;
+        }
+}
 }
 
 export function handleBoxDragLeave(e) {
-    this.dragCount--;
-    if (this.dragCount == 0) {
-        this.classList.remove('over');
+    const target = e.target.closest(".drop-target")
+    if (target) {
+        target.dragCount--;
+        if (target.dragCount == 0) {
+            target.classList.remove('over');
+        }
     }
 }
+
+
+document.addEventListener('dragover', handleBoxDragOver);
+document.addEventListener('dragenter', handleBoxDragEnter);
+document.addEventListener('dragleave', handleBoxDragLeave);
+document.addEventListener('drop', handleDrop);
+document.addEventListener('dragstart', handleDragStart);
+document.addEventListener('dragend', handleDragEnd);
 
 
 // Handle all clicks
@@ -88,13 +108,13 @@ document.addEventListener("click", (e) => {
         groupBox.scrollIntoView();
     }
     else if (e.target.classList.contains('extract-group')) {
-        extractGroup(e.target.dataset.group);
+        extractGroup(e.target.closest(".group-box").dataset.group);
     }
     else if (e.target.classList.contains('ungroup-group')) {
-        ungroup(e.target.dataset.group);
+        ungroup(e.target.closest(".group-box").dataset.group);
     }
     else if (e.target.classList.contains('close-group')) {
-        closeGroup(e.target.dataset.group);
+        closeGroup(e.target.closest(".group-box").dataset.group);
     }
     else if (e.target.classList.contains('lock')) {
         var url = e.target.dataset.url;
@@ -162,18 +182,22 @@ async function extractGroup(group) {
 
 
 async function closeGroup(groupName) {
-    let state = await StateService.loadState();
+    if (groupName !== undefined) {
 
-    TabsService.getAllTabs().then((tabs) => {
-        for (let tab of tabs) {
-            let urlString = tab.url;
+        let state = await StateService.loadState();
+        console.log("close " + groupName);
 
-            if (!tab.pinned && !state.isLocked(urlString) && state.isTabInGroup(urlString, groupName)) {
-                console.log("Remove tab " + tab.id);
-                browser.tabs.remove(tab.id);
+        TabsService.getAllTabs().then((tabs) => {
+            for (let tab of tabs) {
+                let urlString = tab.url;
+
+                if (!tab.pinned && !state.isLocked(urlString) && state.isTabInGroup(urlString, groupName)) {
+                    console.log("Remove tab " + tab.id);
+                    browser.tabs.remove(tab.id);
+                }
             }
-        }
-    });
+        });
+    }
 }
 
 
