@@ -6,10 +6,10 @@
 
   "description": "Categorize and close tabs easily.",
   "icons": {
-    "16": "images/close16.png",
-    "32": "images/close32.png",
-    "48": "images/close48.png",
-    "128": "images/close128.png"
+    "16": "icons/close16.png",
+    "32": "icons/close32.png",
+    "48": "icons/close48.png",
+    "128": "icons/close128.png"
   },
   "action": {
     "browser_style": true,
@@ -21,7 +21,8 @@
   "background": {
     "scripts": [
       "js/background.js"
-    ]
+    ],
+    "type": "module"
   },
 
 

@@ -1,3 +1,4 @@
+import "./polyfill/browser-polyfill.js";
 "use strict";
 
 console.log("Starting");
