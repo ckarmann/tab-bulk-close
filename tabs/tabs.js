@@ -1,6 +1,7 @@
 import { setDirtyAndRefresh, refreshNow } from './tabs_view.js';
 import StateService from '/js/state_service.js'
 import TabsService from '/js/tabs_service.js'
+import Filters from '/js/filters.js'
 
 document.addEventListener("DOMContentLoaded", setDirtyAndRefresh);
 
@@ -256,3 +257,5 @@ browser.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
         refreshNow();
     }
 })
+
+Filters.init(refreshNow);

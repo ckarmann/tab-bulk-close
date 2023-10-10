@@ -1,6 +1,7 @@
 import { handleDragStart, handleDragEnd, handleBoxDragOver, handleBoxDragEnter, handleBoxDragLeave, handleDrop } from './tabs.js';
 import TabsService from '/js/tabs_service.js'
 import StateService from '/js/state_service.js'
+import Filters from '/js/filters.js'
 
 // Mechanism to trigger refreshes of the page, only when there is a change.
 var isDirty = true;
@@ -39,6 +40,10 @@ function listTabs(state) {
     TabsService.getAllTabs().then((tabs) => refreshDisplay(tabs, state));
 }
 
+function filterTab(tab) {
+    return Filters.filter(tab);
+}
+
 
 export function refreshDisplay(tabs, state) {
     console.log(tabs);
@@ -51,21 +56,21 @@ export function refreshDisplay(tabs, state) {
 
         const domains = groupMap[group] === undefined ? [] : Object.values(groupMap[group]);
         
-        // count tabs
+        // count tabs and add metadata.
         let tabCount = 0;
         let closableCount = 0;
         const domainObjects = []
         for (let domain of domains) {
 
-            let d = { domain: domain};
+            let d = { 
+                domain: domain,
+                hasDuplicates: false,
+                filteredCount: 0,
+            };
             domainObjects.push(d);
-            d.hasDuplicates = false;
             const tabs = domainMap[domain];
             for (let tab of tabs) {
                 tabCount ++;
-                if (!(tab.pinned || state.isLocked(tab.url))) {
-                    closableCount ++;
-                }
                 tab.urlWithoutHash = getUrlWithoutHash(tab.url)
                 tab.locked = state.isLocked(tab.url);
                 tab.lastUpdated = new Date(state.urlDates[tab.urlWithoutHash]).toLocaleDateString()
@@ -76,6 +81,13 @@ export function refreshDisplay(tabs, state) {
                 if (duplicateTabs.includes(tab)) {
                     tab.duplicate = true;
                 }
+                tab.filtered = filterTab(tab);
+                if (tab.filtered) {
+                    d.filteredCount ++;
+                    if (!(tab.pinned || state.isLocked(tab.url))) {
+                        closableCount ++;
+                    }
+                }
             }
         }
 
@@ -83,11 +95,11 @@ export function refreshDisplay(tabs, state) {
             "name": group,
             "id": group,
             "info": closableCount + "/" + tabCount,
-            "subgroups" : domainObjects.map(domain => {
+            "subgroups" : domainObjects.filter(d => d.filteredCount > 0).map(domain => {
                 return {
                     "name": domain.domain,
                     "id": domain.domain,
-                    "items": Object.values(domainMap[domain.domain])
+                    "items": Object.values(domainMap[domain.domain]).filter(tab => tab.filtered)
                 };  
             })
         })
@@ -100,7 +112,6 @@ export function refreshDisplay(tabs, state) {
     const renderedShortcuts = Mustache.render(shortcutTemplate, { groups: groupObjectList })
     document.getElementById('tab-groups').innerHTML = renderedGroups;
     document.getElementById('drop-groups-shortcuts').innerHTML = renderedShortcuts;
-    
 }
 
 

@@ -92,3 +92,34 @@ li {
     padding: 0 0.5em;
     background-color: rgb(255, 115, 0);
 }
+
+.panel-filters {
+    width: 300px;
+    position: fixed;
+    right: 300px;
+    top:0;
+    background-color:white;
+    box-shadow: 2px 2px #888;
+}
+
+filter-control {
+    display: block;
+    padding: 6px;
+    border: 1px solid grey;
+}
+
+filter-button {
+    border: 1px solid grey;
+    border-radius: 1em;
+    margin: 0 2px;
+    padding: 0 6px;
+    background-color: lightgrey;
+    white-space: nowrap;
+    line-height: 150%;
+    cursor: pointer;
+}
+
+filter-button.filter-on {
+    border-color: red;
+    background-color: rgb(255, 115, 0);
+}

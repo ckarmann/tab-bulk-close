@@ -24,6 +24,23 @@
     <div class="panel panel-top-drop">
         <div id="drop-groups-shortcuts"></div>
     </div>
+    <div class="panel panel-filters">
+        <filter-control id="filter-duplicates">
+            <filter-button attributes="duplicate">duplicate</filter-button>
+        </filter-control>
+        <filter-control id="filter-pinned">
+            <filter-button attributes="pinned">pinned</filter-button>
+            <filter-button attributes="locked">locked</filter-button>
+            <filter-button attributes="pinned,locked" check="negative">unlocked</filter-button>
+        </filter-control>
+        <filter-control id="filter-dates">
+            <filter-button attributes="today">today</filter-button>
+            <filter-button attributes="yesterday">yesterday</filter-button>
+            <filter-button attributes="week">this week</filter-button>
+            <filter-button attributes="month">this month</filter-button>
+            <filter-button attributes="older">older</filter-button>
+        </filter-control>
+    </div>
 
     <script id="group-template" type="x-tmpl-mustache">
         {{#groups}}
