@@ -54,36 +54,52 @@
                 <button class="ungroup-group">Ungroup</button>
                 <button class="close-group">Close</button>
             </div>
-            <ul class="group-list">
+            <table class="group-list">
+                <col width="20px"/>
+                <col width="100%"/>
+                <col width="100px"/>
+                <col width="100px"/>
                 {{#subgroups}}
-                    <li class="domainList" draggable="true" data-domain="{{id}}">
-                        {{name}}
-                        <ul>
-                            {{#items}}
-                            <li class="tabList">
-                                {{#pinned}}
-                                <span class="lock locked locked-pinned" data-url="{{url}}">&#x1F512;&#xFE0E;</span>
-                                {{/pinned}}
-                                {{^pinned}}
-                                {{#locked}}
-                                <span class="lock locked" data-url="{{url}}">&#x1F512;&#xFE0E;</span>
-                                {{/locked}}
-                                {{^locked}}
-                                <span class="lock unlocked" data-url="{{url}}">&#x1F513;&#xFE0E;</span>
-                                {{/locked}}
-                                {{/pinned}}
-                                <a href="{{url}}" class="switch-tabs" draggable="false" data-tab-id="{{id}}">{{title}}</a>
-                                {{#duplicate}}
-                                <span class="duplicate-tab">duplicate</span>
-                                {{/duplicate}}
-                                <span class="date access-date">{{lastAccessed}}</span>
-                                <span class="date update-date">{{lastUpdated}}</span>
-                            </li>
-                            {{/items}}
-                        </ul>
-                    </li>
+                <tbody class="domainList" draggable="true" data-domain="{{id}}">
+                    <tr class="domainRow">
+                        <td colspan=5>
+                            {{name}}
+                        </td>
+                    </tr>
+                    {{#items}}
+                    <tr class="tabList">
+                        <td class="lockCell">
+                        {{#pinned}}
+                        <span class="lock locked locked-pinned" data-url="{{url}}">&#x1F512;&#xFE0E;</span>
+                        {{/pinned}}
+                        {{^pinned}}
+                        {{#locked}}
+                        <span class="lock locked" data-url="{{url}}">&#x1F512;&#xFE0E;</span>
+                        {{/locked}}
+                        {{^locked}}
+                        <span class="lock unlocked" data-url="{{url}}">&#x1F513;&#xFE0E;</span>
+                        {{/locked}}
+                        {{/pinned}}
+                        </td>
+                        <td>
+                        <a href="{{url}}" class="switch-tabs" draggable="false" data-tab-id="{{id}}">{{title}}</a>
+                        </td>
+                        <td>
+                        {{#duplicate}}
+                        <span class="duplicate-tab">duplicate</span>
+                        {{/duplicate}}
+                        </td>
+                        <!-- <td>
+                        <span class="date access-date">{{lastAccessed}}</span>
+                        </td> -->
+                        <td>
+                        <span class="date update-date">{{lastUpdated}}</span>
+                        </td>
+                    </tr>
+                    {{/items}}
+                </tbody>
                 {{/subgroups}}
-            </ul>
+            </table>
         </div>
         {{/groups}}
     </script>

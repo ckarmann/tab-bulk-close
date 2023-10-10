@@ -1,6 +1,6 @@
 html, body {
-    width: 900px;
-    max-width: 900px;
+    width: 100%;
+    max-width: 1200px;
     font-family:'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
     font-size: 14px;
 }
@@ -122,4 +122,30 @@ filter-button {
 filter-button.filter-on {
     border-color: red;
     background-color: rgb(255, 115, 0);
+}
+
+.domainRow {
+    background-color: lightgray;
+}
+
+.domainRow td {
+    padding: 0.2em 0.5em;
+}
+
+.group-list {
+    width: 100%;
+    max-width: 100%;
+    table-layout: fixed;
+}
+
+
+td {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    max-width: 900px;
+}
+
+.lockCell {
+    width: 1em;
 }
