@@ -1,3 +1,5 @@
+import Filters from '/js/filters.js'
+
 function cleanMapping(mapping, groups) {
     
     for (let domain of Object.keys(mapping)) {
@@ -9,6 +11,39 @@ function cleanMapping(mapping, groups) {
     }
 }
 
+function findDuplicateTabs(tabs) {
+    const duplicateTabs = []
+    for (let i = 0; i< tabs.length; i++) {
+        for (let j = 0; j < tabs.length; j++) {
+            if (i !== j) {
+                if (tabs[i].urlWithoutHash === tabs[j].urlWithoutHash) {
+                    duplicateTabs.push(tabs[i]);
+                    break;
+                }
+            }
+        }
+    }
+    return duplicateTabs;
+}
+
+function getUrlWithoutHash(url) {
+    let urlObject = new URL(url);
+    urlObject.hash = "";
+    let urlWithoutHash = urlObject.toString();
+    return urlWithoutHash;
+}
+
+function getIsoDay(date) {
+    if (isNaN(date)) {
+        return undefined;
+    } else {
+        return new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().substr(0,10);
+    }
+}
+
+function filterTab(tab) {
+    return Filters.filter(tab);
+}
 
 export default {
     State: function(groups, mapping, urlDates, lockedUrls) {
@@ -166,5 +201,45 @@ export default {
 
         // save
         await this.saveState(state);
+    },
+
+    enrichTabs: function(tabs, state) {
+        // calculate days for date filtering.
+        let tmpDate = new Date();
+        const today = getIsoDay(tmpDate);
+        tmpDate.setDate(tmpDate.getDate() - 1);
+        const yesterday = getIsoDay(tmpDate);
+        tmpDate = new Date(); tmpDate.setDate(tmpDate.getDate() - 7);
+        const oneWeekAgo = getIsoDay(tmpDate);
+        tmpDate = new Date(); tmpDate.setMonth(tmpDate.getMonth() - 1);
+        const oneMonthAgo = getIsoDay(tmpDate);
+
+        for (let tab of tabs) {
+            tab.urlWithoutHash = getUrlWithoutHash(tab.url)
+            tab.locked = state.isLocked(tab.url);
+
+            const day = getIsoDay(new Date(state.urlDates[tab.urlWithoutHash]));
+            tab.lastUpdated = day;
+            if (day >= today) {
+                tab.today = true;
+                tab.dayFilter = "today";
+            } else if (day == yesterday) {
+                tab.dayFilter = "yesterday";
+            } else if (day >= oneWeekAgo) {
+                tab.dayFilter = "thisWeek";
+            } else if (day >= oneMonthAgo) {
+                tab.dayFilter = "thisMonth";
+            } else {
+                tab.dayFilter = "older";
+            }
+        }
+        const duplicateTabs = findDuplicateTabs(tabs);
+        
+        for (let tab of tabs) {
+            if (duplicateTabs.includes(tab)) {
+                tab.duplicate = true;
+            }
+            tab.filtered = filterTab(tab);
+        }
     }
 }
