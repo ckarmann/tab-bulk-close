@@ -44,12 +44,30 @@ function filterTab(tab) {
     return Filters.filter(tab);
 }
 
+function getIsoDay(date) {
+    if (isNaN(date)) {
+        return undefined;
+    } else {
+        return new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().substr(0,10);
+    }
+}
+
 
 export function refreshDisplay(tabs, state) {
     console.log(tabs);
     const [groups, groupMap, domainMap] = state.applyGrouping(tabs);
 
     const groupObjectList = []
+
+    // calculate days for date filtering.
+    let tmpDate = new Date();
+    const today = getIsoDay(tmpDate);
+    tmpDate.setDate(tmpDate.getDate() - 1);
+    const yesterday = getIsoDay(tmpDate);
+    tmpDate = new Date(); tmpDate.setDate(tmpDate.getDate() - 7);
+    const oneWeekAgo = getIsoDay(tmpDate);
+    tmpDate = new Date(); tmpDate.setMonth(tmpDate.getMonth() - 1);
+    const oneMonthAgo = getIsoDay(tmpDate);
 
     for (let group of groups) {
         let groupHasDuplicates = false;
@@ -73,7 +91,23 @@ export function refreshDisplay(tabs, state) {
                 tabCount ++;
                 tab.urlWithoutHash = getUrlWithoutHash(tab.url)
                 tab.locked = state.isLocked(tab.url);
-                tab.lastUpdated = new Date(state.urlDates[tab.urlWithoutHash]).toLocaleDateString()
+
+                state.urlDates[tab.urlWithoutHash]
+
+                const day = getIsoDay(new Date(state.urlDates[tab.urlWithoutHash]));
+                tab.lastUpdated = day;
+                if (day >= today) {
+                    tab.today = true;
+                    tab.dayFilter = "today";
+                } else if (day == yesterday) {
+                    tab.dayFilter = "yesterday";
+                } else if (day >= oneWeekAgo) {
+                    tab.dayFilter = "thisWeek";
+                } else if (day >= oneMonthAgo) {
+                    tab.dayFilter = "thisMonth";
+                } else {
+                    tab.dayFilter = "older";
+                }
             }
             const duplicateTabs = findDuplicateTabs(tabs);
             

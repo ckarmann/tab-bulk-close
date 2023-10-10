@@ -41,12 +41,19 @@ export default {
             if (filter) {
                 const attributes = filter.attributes["attributes"].value.split(",");
                 const negativeCheck = filter.attributes["check"] && filter.attributes["check"].value === "negative";
+                const valueCheck = filter.attributes["filter-value"] ? filter.attributes["filter-value"].value : undefined;
                 if (negativeCheck) {
                     for (let attribute of attributes) {
                         if (object[attribute] === true) {
                             return false;
                         }
                     }  
+                } else if (valueCheck) {
+                    for (let attribute of attributes) {
+                        if (object[attribute] !== valueCheck) {
+                            return false;
+                        }
+                    } 
                 } else {
                     for (let attribute of attributes) {
                         if (object[attribute] !== true) {
