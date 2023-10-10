@@ -189,14 +189,17 @@ async function closeGroup(groupName) {
         console.log("close " + groupName);
 
         TabsService.getAllTabs().then((tabs) => {
+            StateService.enrichTabs(tabs, state);
             for (let tab of tabs) {
                 let urlString = tab.url;
 
-                if (!tab.pinned && !state.isLocked(urlString) && state.isTabInGroup(urlString, groupName)) {
-                    console.log("Remove tab " + tab.id);
+                if (!tab.pinned && !state.isLocked(urlString) && state.isTabInGroup(urlString, groupName) &&
+                    Filters.filter(tab)) {
+                    console.log("Remove tab " + tab.id, tab.url);
                     browser.tabs.remove(tab.id);
                 }
             }
+            console.log("done close")
         });
     }
 }
