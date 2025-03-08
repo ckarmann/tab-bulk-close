@@ -117,6 +117,10 @@ document.addEventListener("click", (e) => {
     else if (e.target.classList.contains('close-group')) {
         closeGroup(e.target.closest(".group-box").dataset.group);
     }
+    else if (e.target.classList.contains('close-tab')) {
+        var tabId = +e.target.dataset.tabId;
+        browser.tabs.remove(tabId);
+    }
     else if (e.target.classList.contains('lock')) {
         var url = e.target.dataset.url;
         toggleLock(url);
@@ -124,6 +128,24 @@ document.addEventListener("click", (e) => {
 
     e.preventDefault();
 });
+
+
+document.addEventListener("keydown", (e) => {
+    if (e.key == "Control") {
+        if (!document.body.classList.contains("advancedEnabled")) {
+            document.body.classList.add("advancedEnabled");
+        }
+    }
+});
+
+document.addEventListener("keyup", (e) => {
+    if (e.key == "Control") {
+        if (document.body.classList.contains("advancedEnabled")) {
+            document.body.classList.remove("advancedEnabled");
+        }
+    }
+});
+
 
 // locking
 async function toggleLock(url) {

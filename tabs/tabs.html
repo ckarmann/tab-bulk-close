@@ -59,6 +59,7 @@
                 <col width="100%"/>
                 <col width="100px"/>
                 <col width="100px"/>
+                <col width="100px"/>
                 {{#subgroups}}
                 <tbody class="domainList" draggable="true" data-domain="{{id}}">
                     <tr class="domainRow">
@@ -88,6 +89,10 @@
                         {{#duplicate}}
                         <span class="duplicate-tab">duplicate</span>
                         {{/duplicate}}
+                        </td>
+                        <td>
+                            <span class="windowIcon" style="background-color:{{windowColor.hex}}" ></span>
+                            <button class="close-tab advanced" data-tab-id="{{id}}">Close</button>
                         </td>
                         <!-- <td>
                         <span class="date access-date">{{lastAccessed}}</span>

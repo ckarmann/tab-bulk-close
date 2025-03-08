@@ -30,6 +30,22 @@ li {
     list-style-type: none;
 }
 
+.advanced{
+    display: none;
+    height: 16px;
+    font-size: 12px;
+}
+
+.advancedEnabled .advanced {
+    display:inline-block;
+}
+
+
+.windowIcon {
+    display:inline-block;
+    width:16px;
+    height:9px;
+}
 
 .panel {
     margin: 5px;
