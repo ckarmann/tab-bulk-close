@@ -80,7 +80,7 @@ export function refreshDisplay(tabs, state) {
                 return {
                     "name": domain.domain,
                     "id": domain.domain,
-                    "items": Object.values(domainMap[domain.domain]).filter(tab => tab.filtered)
+                    "items": Object.values(domainMap[domain.domain]).filter(tab => tab.filtered).sort((a,b) => a.url.localeCompare(b.url))
                 };  
             })
         })
