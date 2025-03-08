@@ -272,14 +272,15 @@ browser.tabs.onRemoved.addListener((tabId, removeInfo) => {
 });
 
 browser.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+    console.log(`Tab with id: ${tabId} had change: ${JSON.stringify(changeInfo)}`);
     if ("url" in changeInfo) {
-        console.log(`Tab with id: ${tabId} was set to URL: ${changeInfo.url}`);
         await setRefreshDate(changeInfo.url, Date.now());
         refreshNow();
     }
     if ("title" in changeInfo) {
-        console.log(`Tab with id: ${tabId} was set the title: ${changeInfo.title}`);
-        refreshNow();
+        // don't refresh the whole page.
+        var linkElement = document.querySelector(`.switch-tabs[data-tab-id='${tabId}']`);
+        linkElement.textContent = changeInfo.title;
     }
 })
 
