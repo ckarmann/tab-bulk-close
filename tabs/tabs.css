@@ -32,8 +32,10 @@ li {
 
 .advanced{
     display: none;
-    height: 16px;
-    font-size: 12px;
+    height: 15px;
+    font-size: 10px;
+    vertical-align: top;
+    padding: 1px 4px;
 }
 
 .advancedEnabled .advanced {
