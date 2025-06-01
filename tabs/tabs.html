@@ -98,7 +98,7 @@
                         <span class="date access-date">{{lastAccessed}}</span>
                         </td> -->
                         <td>
-                        <span class="date update-date">{{lastUpdated}}</span>
+                        <span class="date access-date" title={{lastAccessedString}}>{{lastAccessedFriendly}}</span>
                         </td>
                     </tr>
                     {{/items}}
@@ -119,6 +119,9 @@
 
     <script src="/js/polyfill/browser-polyfill.js"></script>
     <script src="/js/mustache/mustache.js"></script>
+    <!-- DayJS 1.11.13 -->
+    <script src="/js/dayjs/dayjs.js"></script>
+    <script src="/js/dayjs/plugin/relativeTime.js"></script>
     <script type="module" src="tabs.js"></script>
 </body>
 

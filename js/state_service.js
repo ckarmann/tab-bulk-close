@@ -1,5 +1,7 @@
 import Filters from '/js/filters.js'
 
+dayjs.extend(window.dayjs_plugin_relativeTime);
+
 function cleanMapping(mapping, groups) {
     
     for (let domain of Object.keys(mapping)) {
@@ -247,16 +249,25 @@ export default {
             tab.urlWithoutHash = getUrlWithoutHash(tab.url)
             tab.locked = state.isLocked(tab.url);
 
-            const day = getIsoDay(new Date(state.urlDates[tab.urlWithoutHash]));
-            tab.lastUpdated = day;
-            if (day >= today) {
+            var accessedTime ;
+            if (tab.timeValue !== undefined) {
+                accessedTime = dayjs(tab.timeValue);
+            } else {
+                console.log("Undefined timeValue for " + tab.id + ": " + tab.title);
+                accessedTime = dayjs(tab.lastAccessed);
+            }
+
+            tab.lastAccessedFriendly = accessedTime.fromNow();
+            tab.lastAccessedString = accessedTime.format();
+
+            if (accessedTime >= dayjs().subtract(1, 'day')) {
                 tab.today = true;
                 tab.dayFilter = "today";
-            } else if (day == yesterday) {
+            } else if (accessedTime >= dayjs().subtract(2, 'day')) {
                 tab.dayFilter = "yesterday";
-            } else if (day >= oneWeekAgo) {
+            } else if (accessedTime >= dayjs().subtract(7, 'day')) {
                 tab.dayFilter = "thisWeek";
-            } else if (day >= oneMonthAgo) {
+            } else if (accessedTime >= dayjs().subtract(1, 'month')) {
                 tab.dayFilter = "thisMonth";
             } else {
                 tab.dayFilter = "older";

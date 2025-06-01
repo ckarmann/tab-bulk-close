@@ -250,13 +250,24 @@ async function getLiveUrls() {
 }
 
 
-async function setRefreshDate(urlString, date) {
-    let url = new URL(urlString);
-    url.hash = "";
-    let liveUrls = await getLiveUrls();
-    await StateService.setRefreshDate(url.toString(), date, liveUrls);
-}
-
+browser.windows.onFocusChanged.addListener((windowId) => {
+    console.log(`The window ${windowId} is focused.`);
+    if (windowId != -1) {
+        browser.tabs.query({
+                "windowId": windowId,
+                "active": true
+            }).then((tabs) => {
+                if (tabs.length == 0) {
+                    console.warn("No active tabs in window " + windowId);
+                } else {
+                    // console.log("Active tabs of focused window:")
+                    // console.log(tabs);
+                    return markTabAccessTime(tabs[0]);
+                }
+            })
+            .then(refreshNow());;
+    }
+})
 
 // Listeners for tab activity
 browser.tabs.onCreated.addListener((tab) => {
@@ -271,16 +282,34 @@ browser.tabs.onRemoved.addListener((tabId, removeInfo) => {
     setDirtyAndRefresh(250);
 });
 
+function markTabAccessTime(tab) {
+    return TabsService.setTabValue(tab, "lastUpdatedOrAccessed", Date.now());
+}
+
+browser.tabs.onActivated.addListener((activeInfo) => {
+    console.log(`onActivated: ${JSON.stringify(activeInfo)}`);
+    const tabId = activeInfo.tabId;
+    browser.tabs.get(tabId)
+    .then(markTabAccessTime)
+    .then(refreshNow());
+})
+
 browser.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
     console.log(`Tab with id: ${tabId} had change: ${JSON.stringify(changeInfo)}`);
     if ("url" in changeInfo) {
-        await setRefreshDate(changeInfo.url, Date.now());
-        refreshNow();
+        browser.tabs.get(tabId)
+        .then(markTabAccessTime)
+        .then(refreshNow());
     }
     if ("title" in changeInfo) {
         // don't refresh the whole page.
         var linkElement = document.querySelector(`.switch-tabs[data-tab-id='${tabId}']`);
         linkElement.textContent = changeInfo.title;
+    }
+    if ("status" in changeInfo && changeInfo["status"] == "complete") {
+        browser.tabs.get(tabId)
+        .then(markTabAccessTime)
+        .then(refreshNow());
     }
 })
 
