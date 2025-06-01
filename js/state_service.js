@@ -48,10 +48,9 @@ function filterTab(tab) {
 }
 
 export default {
-    State: function(groups, mapping, urlDates, lockedUrls) {
+    State: function(groups, mapping, lockedUrls) {
         this.groups = groups || [ "Others" ];
         this.mapping = mapping || {};
-        this.urlDates = urlDates || {};
         lockedUrls = lockedUrls || [];
         this.lockedUrls = lockedUrls;
 
@@ -133,15 +132,14 @@ export default {
     },
 
     loadState : async function () {
-        const state = await browser.storage.local.get(["groups", "mapping", "urlDates", "lockedUrls"])
-        return new this.State(state.groups, state.mapping, state.urlDates, state.lockedUrls);
+        const state = await browser.storage.local.get(["groups", "mapping", "lockedUrls"])
+        return new this.State(state.groups, state.mapping, state.lockedUrls);
     },
 
     saveState : async function (state) {
         let stateObject = {
             "groups": state.groups,
             "mapping": state.mapping,
-            "urlDates": state.urlDates,
             "lockedUrls": state.lockedUrls
         }
         await browser.storage.local.set(stateObject);
@@ -187,21 +185,6 @@ export default {
         } else {
             state.lockedUrls.push(url);
         }
-        await this.saveState(state);
-    },
-
-    setRefreshDate: async function(url, date, liveUrls) {
-        // load
-        const state = await this.loadState();
-
-        // clean old stuff.
-        const cleanedDates = Object.fromEntries(liveUrls.map(url => [url, state.urlDates[url]]));
-        state.urlDates = cleanedDates;
-
-        // set new date
-        state.urlDates[url] = date;
-
-        // save
         await this.saveState(state);
     },
 
