@@ -12,9 +12,9 @@ export async function refreshNow() {
 export async function setDirtyAndRefresh(delayMs) {
     isDirty = true;
     if (delayMs == 0) {
-        refresh();
+        return await refresh();
     } else {
-        delay(delayMs).then(refresh);
+        return delay(delayMs).then(refresh);
     }
 }
 
@@ -29,14 +29,17 @@ async function refresh() {
         console.log("--------- refresh");
         const state = await StateService.loadState();
         console.log(state);
-        listTabs(state);
+        await listTabs(state);
     }
     isDirty = false;
 }
 
 // page refresh implementation.
-function listTabs(state) {
-    TabsService.getAllTabs().then((tabs) => refreshDisplay(tabs, state));
+async function listTabs(state) {
+    return TabsService.getAllTabs()
+        .then((tabs) => {
+            refreshDisplay(tabs, state);
+        });
 }
 
 export function refreshDisplay(tabs, state) {
@@ -81,7 +84,7 @@ export function refreshDisplay(tabs, state) {
                     "name": domain.domain,
                     "id": domain.domain,
                     "items": Object.values(domainMap[domain.domain]).filter(tab => tab.filtered).sort((a,b) => a.url.localeCompare(b.url))
-                };  
+                };
             })
         })
     }
