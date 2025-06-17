@@ -51,7 +51,7 @@
                     {{name}} ({{info}})
                 </h2>
                 <button class="extract-group">Extract</button>
-                <button class="ungroup-group">Ungroup</button>
+                <button class="ungroup-group" {{#isOthers}}disabled{{/isOthers}}>Ungroup</button>
                 <button class="close-group">Close</button>
             </div>
             <table class="group-list">

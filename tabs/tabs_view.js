@@ -80,6 +80,7 @@ export function refreshDisplay(tabs, state) {
             "name": group,
             "id": group,
             "info": closableCount + "/" + tabCount,
+            "isOthers": group == "Others",
             "subgroups" : domainObjects.filter(d => d.filteredCount > 0).map(domain => {
                 return {
                     "name": domain.domain,

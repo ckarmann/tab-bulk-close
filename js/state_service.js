@@ -169,6 +169,12 @@ export default {
         if (groupIndex > -1) {
             groups.splice(groupIndex, 1);
 
+            // make sure "Others" is still there.
+            const otherIndex = groups.indexOf("Others");
+            if (otherIndex == -1) {
+                groups.push("Others");
+            }
+
             cleanMapping(mapping, groups);
 
             await this.saveState(state);
