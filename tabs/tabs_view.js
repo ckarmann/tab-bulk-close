@@ -6,6 +6,7 @@ import StateService from '/js/state_service.js'
 var isDirty = true;
 
 export async function refreshNow() {
+    console.log("setDirtyAndRefresh");
     setDirtyAndRefresh(0);
 }
 
@@ -26,7 +27,7 @@ function delay(milliseconds) {
 
 async function refresh() {
     if (isDirty) {
-        console.log("--------- refresh");
+        console.warn("--------- refresh");
         const state = await StateService.loadState();
         console.log(state);
         await listTabs(state);

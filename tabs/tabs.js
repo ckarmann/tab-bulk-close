@@ -278,7 +278,7 @@ browser.tabs.onCreated.addListener((tab) => {
 
 
 browser.tabs.onRemoved.addListener((tabId, removeInfo) => {
-    console.log(`The tab with id: ${tabId}, is closing`);
+    //console.log(`The tab with id: ${tabId}, is closing`);
     setDirtyAndRefresh(250);
 });
 
@@ -295,21 +295,24 @@ browser.tabs.onActivated.addListener((activeInfo) => {
 })
 
 browser.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
-    console.log(`Tab with id: ${tabId} had change: ${JSON.stringify(changeInfo)}`);
-    if ("url" in changeInfo) {
-        browser.tabs.get(tabId)
-        .then(markTabAccessTime)
-        .then(refreshNow());
-    }
+    console.log(`Tab with id: ${tabId} had change: ${JSON.stringify(changeInfo)}. active=${tab.active}`);
+
     if ("title" in changeInfo) {
         // don't refresh the whole page.
         var linkElement = document.querySelector(`.switch-tabs[data-tab-id='${tabId}']`);
         linkElement.textContent = changeInfo.title;
     }
-    if ("status" in changeInfo && changeInfo["status"] == "complete") {
-        browser.tabs.get(tabId)
-        .then(markTabAccessTime)
-        .then(refreshNow());
+    if (tab.active) {
+        if ("url" in changeInfo) {
+            browser.tabs.get(tabId)
+            .then(markTabAccessTime)
+            .then(refreshNow());
+        }
+        if ("status" in changeInfo && changeInfo["status"] == "complete") {
+            browser.tabs.get(tabId)
+            .then(markTabAccessTime)
+            .then(refreshNow());
+        }
     }
 })
 

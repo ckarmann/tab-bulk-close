@@ -232,16 +232,20 @@ export default {
             tab.urlWithoutHash = getUrlWithoutHash(tab.url)
             tab.locked = state.isLocked(tab.url);
 
+            var accessedTimeColor;
             var accessedTime ;
             if (tab.timeValue !== undefined) {
                 accessedTime = dayjs(tab.timeValue);
+                accessedTimeColor="black";
             } else {
                 console.log("Undefined timeValue for " + tab.id + ": " + tab.title);
                 accessedTime = dayjs(tab.lastAccessed);
+                accessedTimeColor="red";
             }
 
             tab.lastAccessedFriendly = accessedTime.fromNow();
             tab.lastAccessedString = accessedTime.format();
+            tab.lastAccessedColor = accessedTimeColor;
 
             if (accessedTime >= dayjs().subtract(1, 'day')) {
                 tab.today = true;
