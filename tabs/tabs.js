@@ -249,10 +249,13 @@ async function getLiveUrls() {
     return urls;
 }
 
-
+// TODO: a better way to avoid refreshing all the page.
+var lastFocusedWindow = -1;
+const specialWindowId = 1750;
 browser.windows.onFocusChanged.addListener((windowId) => {
-    console.log(`The window ${windowId} is focused.`);
-    if (windowId != -1) {
+    console.log(`The window ${windowId} is focused. Last one was ${lastFocusedWindow}.`);
+    if (windowId != -1 && lastFocusedWindow != windowId && windowId != specialWindowId) {
+        lastFocusedWindow = windowId;
         browser.tabs.query({
                 "windowId": windowId,
                 "active": true
