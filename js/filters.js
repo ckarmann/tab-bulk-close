@@ -21,8 +21,12 @@ export default {
         document.addEventListener("click", (e) => {
 
             // group management
-            const target = e.target;
-            if (target.tagName == "FILTER-BUTTON") {
+            var target = e.target;
+            if (target.tagName != "FILTER-BUTTON") {
+                target = target.closest("filter-button");
+            }
+
+            if (target) {
                 const control = target.closest("filter-control");
                 if (target.classList.contains("filter-on")) {
                     turnOffFilter(control, target, this.state);
@@ -34,6 +38,28 @@ export default {
         
             e.preventDefault();
         });
+    },
+
+    applyFilterState: function(control) {
+        const state = this.state[control.id];
+
+        const compareAttr = function(state, button, key) {
+            return state.attributes[key] == button.attributes[key] ||
+                state.attributes[key].value == button.attributes[key].value
+        }
+
+        if (state) {
+            const filterButtons = control.querySelectorAll("filter-button");
+            for (let button of filterButtons) {
+                if (compareAttr(state, button, "attributes") &&
+                    compareAttr(state, button, "check") &&
+                    compareAttr(state, button, "filter-value")
+                ) {
+                    turnOnFilter(control, button, this.state);
+                    return;
+                }
+            }
+        }
     },
 
     filter: function(object) {
@@ -50,7 +76,7 @@ export default {
                     }  
                 } else if (valueCheck) {
                     for (let attribute of attributes) {
-                        if (object[attribute] !== valueCheck) {
+                        if (object[attribute].toString() !== valueCheck) {
                             return false;
                         }
                     } 
