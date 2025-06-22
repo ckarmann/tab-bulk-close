@@ -41,6 +41,8 @@
             <filter-button attributes="dayFilter" filter-value="thisMonth">this month</filter-button>
             <filter-button attributes="dayFilter" filter-value="older">older</filter-button>
         </filter-control>
+        <filter-control id="filter-windows">
+        </filter-control>
     </div>
 
     <script id="group-template" type="x-tmpl-mustache">
@@ -115,6 +117,15 @@
             {{name}}
         </div>
         {{/groups}}
+    </script>
+
+    <script id="window-filter-template" type="x-tmpl-mustache">
+        {{#windows}}
+        <filter-button attributes="windowId" filter-value="{{id}}"">
+            <span class="windowIcon" style="background-color:{{windowColor.hex}}" ></span>
+            ({{tabCount}})
+        </filter-button>
+        {{/windows}}
     </script>
 
     <script src="/js/polyfill/browser-polyfill.js"></script>

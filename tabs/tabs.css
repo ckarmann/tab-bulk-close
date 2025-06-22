@@ -135,6 +135,7 @@ filter-button {
     white-space: nowrap;
     line-height: 150%;
     cursor: pointer;
+    display: inline-block;
 }
 
 filter-button.filter-on {

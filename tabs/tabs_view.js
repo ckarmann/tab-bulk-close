@@ -1,6 +1,7 @@
 import { handleDragStart, handleDragEnd, handleBoxDragOver, handleBoxDragEnter, handleBoxDragLeave, handleDrop } from './tabs.js';
 import TabsService from '/js/tabs_service.js'
 import StateService from '/js/state_service.js'
+import Filters from '/js/filters.js'
 
 // Mechanism to trigger refreshes of the page, only when there is a change.
 var isDirty = true;
@@ -49,6 +50,7 @@ export function refreshDisplay(tabs, state) {
     const [groups, groupMap, domainMap] = state.applyGrouping(tabs);
 
     const groupObjectList = []
+    const windowIdMap = new Map()
 
     for (let group of groups) {
         const domains = groupMap[group] === undefined ? [] : Object.values(groupMap[group]);
@@ -72,6 +74,17 @@ export function refreshDisplay(tabs, state) {
                     if (!(tab.pinned || state.isLocked(tab.url))) {
                         closableCount ++;
                     }
+                }
+                const windowId = tab.windowId;
+                if (!windowIdMap.has(windowId)) {
+                    const window = ({
+                        "id": windowId,
+                        "windowColor": tab.windowColor,
+                        "tabCount": 1
+                    });
+                    windowIdMap.set(windowId, window);
+                } else {
+                    windowIdMap.get(windowId).tabCount += 1
                 }
             }
         }
@@ -98,4 +111,11 @@ export function refreshDisplay(tabs, state) {
     const renderedShortcuts = Mustache.render(shortcutTemplate, { groups: groupObjectList })
     document.getElementById('tab-groups').innerHTML = renderedGroups;
     document.getElementById('drop-groups-shortcuts').innerHTML = renderedShortcuts;
+
+    // update windows filter.
+    const windowFilterTemplate = document.getElementById('window-filter-template').innerHTML;
+    const renderedWindowFiter = Mustache.render(windowFilterTemplate, { windows: Array.from(windowIdMap.values()) });
+    const windowFilterControl = document.getElementById('filter-windows');
+    windowFilterControl.innerHTML = renderedWindowFiter;
+    Filters.applyFilterState(windowFilterControl);
 }
