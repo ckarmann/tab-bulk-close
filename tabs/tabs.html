@@ -93,7 +93,7 @@
                         {{/duplicate}}
                         </td>
                         <td>
-                            <span class="windowIcon" style="background-color:{{windowColor.hex}}" ></span>
+                            <span class="windowIcon" style="background-color:{{windowColor}}" ></span>
                             <button class="close-tab advanced" data-tab-id="{{id}}">Close</button>
                         </td>
                         <!-- <td>
@@ -122,7 +122,7 @@
     <script id="window-filter-template" type="x-tmpl-mustache">
         {{#windows}}
         <filter-button attributes="windowId" filter-value="{{id}}"">
-            <span class="windowIcon" style="background-color:{{windowColor.hex}}" ></span>
+            <span class="windowIcon" style="background-color:{{windowColor}}" ></span>
             ({{tabCount}})
         </filter-button>
         {{/windows}}

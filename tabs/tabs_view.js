@@ -5,6 +5,11 @@ import Filters from '/js/filters.js'
 
 // Mechanism to trigger refreshes of the page, only when there is a change.
 var isDirty = true;
+// from https://sashamaps.net/docs/resources/20-colors/
+// (Accessibility:99%)
+const colorList = ['#e6194B', '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#42d4f4', '#f032e6', '#fabed4', '#469990', '#dcbeff', '#9A6324', '#fffac8', '#800000', '#aaffc3', '#000075', '#a9a9a9', '#ffffff', '#000000']
+var nextColor = 0;
+const windowIdColorMap = new Map();
 
 export async function refreshNow() {
     console.log("setDirtyAndRefresh");
@@ -44,6 +49,17 @@ async function listTabs(state) {
         });
 }
 
+function attributeWindowColor(windowId) {
+    if (windowIdColorMap.has(windowId)) {
+        return windowIdColorMap.get(windowId);
+    } else {
+        const newColor = colorList[nextColor];
+        nextColor = (nextColor + 1) % colorList.length;
+        windowIdColorMap.set(windowId, newColor);
+        return newColor;
+    }
+}
+
 export function refreshDisplay(tabs, state) {
     StateService.enrichTabs(tabs, state);
 
@@ -76,10 +92,12 @@ export function refreshDisplay(tabs, state) {
                     }
                 }
                 const windowId = tab.windowId;
+                const windowColor = attributeWindowColor(windowId);
+                tab.windowColor = windowColor;
                 if (!windowIdMap.has(windowId)) {
                     const window = ({
                         "id": windowId,
-                        "windowColor": tab.windowColor,
+                        "windowColor": windowColor,
                         "tabCount": 1
                     });
                     windowIdMap.set(windowId, window);
@@ -113,8 +131,9 @@ export function refreshDisplay(tabs, state) {
     document.getElementById('drop-groups-shortcuts').innerHTML = renderedShortcuts;
 
     // update windows filter.
+    const sortedWinMap = new Map([...windowIdMap.entries()].sort());
     const windowFilterTemplate = document.getElementById('window-filter-template').innerHTML;
-    const renderedWindowFiter = Mustache.render(windowFilterTemplate, { windows: Array.from(windowIdMap.values()) });
+    const renderedWindowFiter = Mustache.render(windowFilterTemplate, { windows: Array.from(sortedWinMap.values()) });
     const windowFilterControl = document.getElementById('filter-windows');
     windowFilterControl.innerHTML = renderedWindowFiter;
     Filters.applyFilterState(windowFilterControl);

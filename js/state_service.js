@@ -205,35 +205,6 @@ export default {
         tmpDate = new Date(); tmpDate.setMonth(tmpDate.getMonth() - 1);
         const oneMonthAgo = getIsoDay(tmpDate);
 
-        function colorHash(inputString){
-            // from public domain code: https://github.com/RolandR/ColorHash/blob/master/colorhash.js
-            var sum = 0;
-            
-            for(var i in inputString){
-                sum += inputString.charCodeAt(i);
-            }
-        
-            var r = ~~(('0.'+Math.sin(sum+1).toString().substr(6))*256);
-            var g = ~~(('0.'+Math.sin(sum+2).toString().substr(6))*256);
-            var b = ~~(('0.'+Math.sin(sum+3).toString().substr(6))*256);
-        
-            var rgb = "rgb("+r+", "+g+", "+b+")";
-        
-            var hex = "#";
-        
-            hex += ("00" + r.toString(16)).substr(-2,2).toUpperCase();
-            hex += ("00" + g.toString(16)).substr(-2,2).toUpperCase();
-            hex += ("00" + b.toString(16)).substr(-2,2).toUpperCase();
-        
-            return {
-                 r: r
-                ,g: g
-                ,b: b
-                ,rgb: rgb
-                ,hex: hex
-            };
-        }
-
         for (let tab of tabs) {
             tab.urlWithoutHash = getUrlWithoutHash(tab.url)
             tab.locked = state.isLocked(tab.url);
@@ -244,7 +215,7 @@ export default {
                 accessedTime = dayjs(tab.timeValue);
                 accessedTimeColor="black";
             } else {
-                console.log("Undefined timeValue for " + tab.id + ": " + tab.title);
+                // console.log("Undefined timeValue for " + tab.id + ": " + tab.title);
                 accessedTime = dayjs(tab.lastAccessed);
                 accessedTimeColor="red";
             }
@@ -265,8 +236,6 @@ export default {
             } else {
                 tab.dayFilter = "older";
             }
-
-            tab.windowColor = colorHash(tab.windowId.toString());
         }
         const duplicateTabs = findDuplicateTabs(tabs);
         
