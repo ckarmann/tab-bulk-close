@@ -250,25 +250,21 @@ async function getLiveUrls() {
 }
 
 var lastFocusedWindow = -1;
-browser.windows.onFocusChanged.addListener((windowId) => {
+browser.windows.onFocusChanged.addListener(async (windowId) => {
     console.log(`The window ${windowId} is focused. Last one was ${lastFocusedWindow}.`);
     if (windowId != -1 && lastFocusedWindow != windowId) {
-        browser.tabs.query({
-                "windowId": windowId,
-                "active": true
-            }).then((tabs) => {
-                if (tabs.length == 0) {
-                    // this may happen if the new focused window is the Developer Tools window for example.
-                    throw new Error("No active tabs in window " + windowId);
-                } else {
-                    // console.log("Active tabs of focused window:")
-                    // console.log(tabs);
-                    lastFocusedWindow = windowId;
-                    return markTabAccessTime(tabs[0]);
-                }
-            })
-            .then(refreshNow)
-            .catch(e => console.warn(e));
+        const tabs = await browser.tabs.query({
+            "windowId": windowId,
+            "active": true
+        });
+        if (tabs.length == 0) {
+            // this may happen if the new focused window is the Developer Tools window for example.
+            console.debug("No active tabs in window " + windowId);
+        } else {
+            lastFocusedWindow = windowId;
+            await markTabAccessTime(tabs[0]);
+            refreshNow();
+        }
     }
 })
 
@@ -285,7 +281,7 @@ browser.tabs.onRemoved.addListener((tabId, removeInfo) => {
     setDirtyAndRefresh(250);
 });
 
-function markTabAccessTime(tab) {
+async function markTabAccessTime(tab) {
     return TabsService.setTabValue(tab, "lastUpdatedOrAccessed", Date.now());
 }
 
