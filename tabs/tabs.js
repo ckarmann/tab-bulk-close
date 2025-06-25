@@ -249,26 +249,26 @@ async function getLiveUrls() {
     return urls;
 }
 
-// TODO: a better way to avoid refreshing all the page.
 var lastFocusedWindow = -1;
-const specialWindowId = 1750;
 browser.windows.onFocusChanged.addListener((windowId) => {
     console.log(`The window ${windowId} is focused. Last one was ${lastFocusedWindow}.`);
-    if (windowId != -1 && lastFocusedWindow != windowId && windowId != specialWindowId) {
-        lastFocusedWindow = windowId;
+    if (windowId != -1 && lastFocusedWindow != windowId) {
         browser.tabs.query({
                 "windowId": windowId,
                 "active": true
             }).then((tabs) => {
                 if (tabs.length == 0) {
-                    console.warn("No active tabs in window " + windowId);
+                    // this may happen if the new focused window is the Developer Tools window for example.
+                    throw new Error("No active tabs in window " + windowId);
                 } else {
                     // console.log("Active tabs of focused window:")
                     // console.log(tabs);
+                    lastFocusedWindow = windowId;
                     return markTabAccessTime(tabs[0]);
                 }
             })
-            .then(refreshNow());;
+            .then(refreshNow)
+            .catch(e => console.warn(e));
     }
 })
 
