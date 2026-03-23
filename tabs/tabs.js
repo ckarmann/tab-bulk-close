@@ -2,6 +2,12 @@ import { setDirtyAndRefresh, refreshNow } from './tabs_view.js';
 import StateService from '/js/state_service.js'
 import TabsService from '/js/tabs_service.js'
 import Filters from '/js/filters.js'
+import addGroupCommand from '/js/app/commands/add_group.js'
+import ungroupCommand from '/js/app/commands/ungroup.js'
+import moveDomainCommand from '/js/app/commands/move_domain.js'
+import toggleLockCommand from '/js/app/commands/toggle_lock.js'
+import closeGroupCommand from '/js/app/commands/close_group.js'
+import extractGroupCommand from '/js/app/commands/extract_group.js'
 
 document.addEventListener("DOMContentLoaded", setDirtyAndRefresh);
 
@@ -26,8 +32,11 @@ export function handleDragEnd(e) {
 }
 
 async function moveDomainToGroup(newGroup, domain) {
-    await StateService.setDomainGroupAndSave(domain, newGroup);
-    refreshNow();
+    await moveDomainCommand({
+        domain,
+        newGroup,
+        onChanged: refreshNow,
+    });
 }
 
 export function handleDrop(e) {
@@ -149,95 +158,45 @@ document.addEventListener("keyup", (e) => {
 
 // locking
 async function toggleLock(url) {
-    await StateService.toggleLock(url);
-    refreshNow();
+    await toggleLockCommand({
+        url,
+        onChanged: refreshNow,
+    });
 }
 
 
 // group actions
 
 async function extractGroup(group) {
-    console.log("extract " + group);
-
-    let state = await StateService.loadState();
-    let tabs = await TabsService.getAllTabs();
-
-    const [_, groupMap, domainMap] = state.applyGrouping(tabs);
-    let domains = groupMap[group];
-
-    let tabIds = [];
-    let windowIds = new Set();
-    for (let domain of domains) {
-        for (let tab of domainMap[domain]) {
-
-            tabIds.push(tab.id);
-            windowIds.add(tab.windowId);
-        }
-    }
-    if (windowIds.size == 1) {
-        // already in one window.
-        let [windowId] = windowIds;
-
-        let windowInfo = await browser.windows.get(windowId, { populate: true });
-        if (windowInfo.tabs.length == tabIds.length) {
-            // no other tab in the window, useless to create a new one, just focus on the old.
-
-            browser.windows.update(windowId, {
-                focused: true
-            });
-            browser.tabs.update(tabIds[0], {
-                active: true
-            });
-            return;
-        }
-    }
-    
-
-    let windowInfo = await browser.windows.create({
-        focused: true,
-        tabId: tabIds[0]
+    await extractGroupCommand({
+        group,
+        onChanged: refreshNow,
     });
-    await browser.tabs.move(tabIds, {
-        windowId: windowInfo.id,
-        index: -1
-    })
 }
 
 
 async function closeGroup(groupName) {
-    if (groupName !== undefined) {
-
-        let state = await StateService.loadState();
-        console.log("close " + groupName);
-
-        TabsService.getAllTabs().then((tabs) => {
-            StateService.enrichTabs(tabs, state);
-            for (let tab of tabs) {
-                let urlString = tab.url;
-
-                if (!tab.pinned && !state.isLocked(urlString) && state.isTabInGroup(urlString, groupName) &&
-                    Filters.filter(tab)) {
-                    console.log("Remove tab " + tab.id, tab.url);
-                    browser.tabs.remove(tab.id);
-                }
-            }
-            console.log("done close")
-        });
-    }
+    await closeGroupCommand({
+        groupName,
+        onChanged: refreshNow,
+    });
 }
 
 
 // group management
 async function addGroup(newGroupName) {
-    await StateService.addGroupAndSave(newGroupName);
-    refreshNow();
+    await addGroupCommand({
+        newGroupName,
+        onChanged: refreshNow,
+    });
 }
 
 
 async function ungroup(groupName) {
-    if (await StateService.removeGroupAndSave(groupName)) {
-        refreshNow();
-    }
+    await ungroupCommand({
+        groupName,
+        onChanged: refreshNow,
+    });
 }
 
 async function getLiveUrls() {
