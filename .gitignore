@@ -1,2 +1,7 @@
 manifest.json
-
+.vscode/
+node_modules/
+dist/
+*.log
+*.tmp
+coverage/
