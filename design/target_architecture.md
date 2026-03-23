@@ -194,6 +194,61 @@ Forbidden dependencies:
 4. Background emits `state_changed`.
 5. UI requests query snapshot and rerenders.
 
+### Message contract (Phase 3)
+
+Use `browser.runtime.sendMessage` for UI/background communication.
+
+UI -> background message envelope:
+
+```json
+{
+  "type": "command:add_group | command:ungroup | command:move_domain | command:toggle_lock | command:close_group | command:extract_group | query:get_tabs_snapshot",
+  "payload": {},
+  "requestId": "optional-string"
+}
+```
+
+Background -> UI event envelope:
+
+```json
+{
+  "type": "state_changed",
+  "payload": {
+    "source": "background",
+    "reason": "tab_created | tab_removed | tab_updated | tab_activated | window_focus_changed | command:add_group | command:ungroup | command:move_domain | command:toggle_lock | command:close_group | command:extract_group",
+    "timestamp": 0,
+    "changedTabIds": []
+  }
+}
+```
+
+Background direct response for request/response calls:
+
+```json
+{
+  "ok": true,
+  "requestId": "optional-string",
+  "result": {}
+}
+```
+
+```json
+{
+  "ok": false,
+  "requestId": "optional-string",
+  "error": {
+    "code": "invalid_message | unknown_type | execution_failed",
+    "message": "human-readable"
+  }
+}
+```
+
+Contract notes:
+
+- `state_changed` is an invalidation event; UI should fetch fresh snapshot via `query:get_tabs_snapshot`.
+- `requestId` is optional but recommended for tracing/debug logs.
+- `changedTabIds` is optional and can remain empty until incremental refresh is implemented.
+
 ## Suggested file mapping from current code
 
 - Current `js/state_service.js`
