@@ -1,21 +1,15 @@
 import StateService from '/js/state_service.js'
 import TabsService from '/js/tabs_service.js'
+import TabsGateway from '/js/infra/browser/tabs_gateway.js'
+import WindowsGateway from '/js/infra/browser/windows_gateway.js'
 
 // Command to extract all tabs of a group into a new window
 export default async function extractGroupCommand({
     group,
     stateService = StateService,
     tabsService = TabsService,
-    windowsGateway = { 
-        get: (windowId, options) => browser.windows.get(windowId, options),
-        create: (createData) => browser.windows.create(createData),
-        update: (windowId, updateData) => browser.windows.update(windowId, updateData),
-    },
-    tabsGateway = {
-        get: (tabId) => browser.tabs.get(tabId),
-        update: (tabId, updateData) => browser.tabs.update(tabId, updateData),
-        move: (tabIds, moveData) => browser.tabs.move(tabIds, moveData),
-    },
+    windowsGateway = WindowsGateway,
+    tabsGateway = TabsGateway,
     onChanged,
 } = {}) {
     if (!group) {

@@ -1,13 +1,14 @@
 import StateService from '/js/state_service.js'
 import TabsService from '/js/tabs_service.js'
 import Filters from '/js/filters.js'
+import TabsGateway from '/js/infra/browser/tabs_gateway.js'
 
 export default async function closeGroupCommand({
     groupName,
     stateService = StateService,
     tabsService = TabsService,
     filters = Filters,
-    tabsGateway = { remove: (tabId) => browser.tabs.remove(tabId) },
+    tabsGateway = TabsGateway,
     onChanged,
 } = {}) {
     if (!groupName) {

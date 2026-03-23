@@ -230,6 +230,13 @@ Forbidden dependencies:
 - Move data shaping from current view module into `tabs_presenter.js`.
 - Keep Mustache templates and rendering strategy unchanged.
 
+### Phase 2.5: Introduce browser gateways
+
+- Create concrete `tabs_gateway.js` and `windows_gateway.js` modules as soon as commands need browser APIs.
+- Replace inline `browser.tabs` and `browser.windows` wrapper objects in commands with imports from `js/infra/browser/`.
+- Keep `storage_gateway.js` and `sessions_gateway.js` for the later repository split, when that value becomes immediate.
+- Benefit: commands become easier to test and the future background migration has a clear API boundary.
+
 ### Phase 3: Move browser lifecycle listeners to background
 
 - Move tab/window event listeners from tabs page runtime into background runtime.
