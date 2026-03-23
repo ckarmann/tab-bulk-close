@@ -15,7 +15,11 @@ export default defineConfig({
             provider: 'v8',
             reporter: ['text', 'html', 'lcov'],
             reportsDirectory: 'coverage',
-            include: ['js/app/commands/**/*.js'],
+            include: [
+                'js/app/commands/**/*.js',
+                'js/ui/presenters/**/*.js',
+                'js/ui/renderers/**/*.js',
+            ],
         },
     },
 })
