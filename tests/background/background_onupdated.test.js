@@ -32,6 +32,9 @@ async function loadBackgroundAndCaptureListeners() {
         runtime: {
             getURL: vi.fn(() => 'moz-extension://id/tabs/tabs.html'),
             sendMessage: (...args) => runtimeSendMessageSpy(...args),
+            onMessage: {
+                addListener: vi.fn(),
+            },
         },
         action: {
             onClicked: { addListener: vi.fn() },

@@ -1,5 +1,6 @@
 import "./polyfill/browser-polyfill.js";
 import { notifyStateChanged } from '/js/shared/background_notify.js'
+import routeMessage from '/js/app/message_router.js'
 "use strict";
 
 console.log("Starting");
@@ -30,6 +31,20 @@ function openTab() {
 }
 
 browser.action.onClicked.addListener(openTab);
+
+browser.runtime.onMessage.addListener((message) => {
+    const messageType = message?.type;
+
+    // Ignore fire-and-forget notifications like state_changed.
+    if (typeof messageType !== 'string') {
+        return undefined;
+    }
+    if (!messageType.startsWith('command:') && !messageType.startsWith('query:')) {
+        return undefined;
+    }
+
+    return routeMessage(message);
+});
 
 browser.tabs.onCreated.addListener((tab) => {
     console.log(`The tab with id: ${tab.id}, is being created.`);

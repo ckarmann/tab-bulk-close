@@ -5,11 +5,13 @@ const {
     refreshNowSpy,
     filtersInitSpy,
     tabsServiceSetValueSpy,
+    runtimeSendMessageSpy,
 } = vi.hoisted(() => ({
     setDirtyAndRefreshSpy: vi.fn(),
     refreshNowSpy: vi.fn(),
     filtersInitSpy: vi.fn(),
     tabsServiceSetValueSpy: vi.fn().mockResolvedValue(undefined),
+    runtimeSendMessageSpy: vi.fn().mockResolvedValue({ ok: true }),
 }))
 
 vi.mock('/tabs/tabs_view.js', () => ({
@@ -29,21 +31,17 @@ vi.mock('/js/filters.js', () => ({
         init: (...args) => filtersInitSpy(...args),
     },
 }))
-vi.mock('/js/app/commands/add_group.js', () => ({ default: vi.fn().mockResolvedValue({ ok: true }) }))
-vi.mock('/js/app/commands/ungroup.js', () => ({ default: vi.fn().mockResolvedValue({ ok: true }) }))
-vi.mock('/js/app/commands/move_domain.js', () => ({ default: vi.fn().mockResolvedValue({ ok: true }) }))
-vi.mock('/js/app/commands/toggle_lock.js', () => ({ default: vi.fn().mockResolvedValue({ ok: true }) }))
-vi.mock('/js/app/commands/close_group.js', () => ({ default: vi.fn().mockResolvedValue({ ok: true }) }))
-vi.mock('/js/app/commands/extract_group.js', () => ({ default: vi.fn().mockResolvedValue({ ok: true }) }))
-
 async function loadTabsAndCaptureMessageListener() {
     vi.resetModules()
 
     setDirtyAndRefreshSpy.mockReset()
     refreshNowSpy.mockReset()
     filtersInitSpy.mockReset()
+    runtimeSendMessageSpy.mockReset()
+    runtimeSendMessageSpy.mockResolvedValue({ ok: true })
 
     const runtimeMessageListeners = []
+    const domEventListeners = {}
     const linkElement = {
         textContent: 'Old title',
         scrollIntoView: vi.fn(),
@@ -55,10 +53,14 @@ async function loadTabsAndCaptureMessageListener() {
     }
     const querySelectorSpy = vi.fn(() => linkElement)
 
+    const addGroupInput = { value: 'Work' }
+
     globalThis.document = {
-        addEventListener: vi.fn(),
+        addEventListener: vi.fn((eventName, listener) => {
+            domEventListeners[eventName] = listener
+        }),
         getElementById: vi.fn(() => ({
-            value: '',
+            value: addGroupInput.value,
             innerHTML: '',
             classList: {
                 contains: vi.fn().mockReturnValue(false),
@@ -79,6 +81,7 @@ async function loadTabsAndCaptureMessageListener() {
 
     globalThis.browser = {
         runtime: {
+            sendMessage: (...args) => runtimeSendMessageSpy(...args),
             onMessage: {
                 addListener: vi.fn((listener) => {
                     runtimeMessageListeners.push(listener)
@@ -104,8 +107,14 @@ async function loadTabsAndCaptureMessageListener() {
     await import('/tabs/tabs.js')
 
     expect(runtimeMessageListeners).toHaveLength(1)
+    expect(typeof domEventListeners.click).toBe('function')
+    expect(typeof domEventListeners.drop).toBe('function')
     return {
         listener: runtimeMessageListeners[0],
+        clickListener: domEventListeners.click,
+        dropListener: domEventListeners.drop,
+        addGroupInput,
+        runtimeSendMessageSpy,
         querySelectorSpy,
         linkElement,
     }
@@ -175,5 +184,170 @@ describe('tabs runtime message flow', () => {
         }).not.toThrow()
 
         expect(refreshNowSpy).not.toHaveBeenCalled()
+    })
+
+    it('dispatches add_group command to background on add-group click', async () => {
+        const { clickListener, runtimeSendMessageSpy, addGroupInput } = await loadTabsAndCaptureMessageListener()
+
+        addGroupInput.value = '  Work  '
+        const preventDefault = vi.fn()
+
+        clickListener({
+            target: {
+                id: 'add-group-button',
+                classList: { contains: vi.fn().mockReturnValue(false) },
+            },
+            preventDefault,
+        })
+
+        await Promise.resolve()
+
+        expect(runtimeSendMessageSpy).toHaveBeenCalledWith({
+            type: 'command:add_group',
+            payload: { newGroupName: '  Work  ' },
+        })
+        expect(refreshNowSpy).toHaveBeenCalled()
+        expect(preventDefault).toHaveBeenCalled()
+    })
+
+    it('dispatches ungroup command to background on ungroup click', async () => {
+        const { clickListener, runtimeSendMessageSpy } = await loadTabsAndCaptureMessageListener()
+        const preventDefault = vi.fn()
+
+        clickListener({
+            target: {
+                classList: {
+                    contains: vi.fn((className) => className === 'ungroup-group'),
+                },
+                closest: vi.fn(() => ({
+                    dataset: {
+                        group: 'Work',
+                    },
+                })),
+            },
+            preventDefault,
+        })
+
+        await Promise.resolve()
+
+        expect(runtimeSendMessageSpy).toHaveBeenCalledWith({
+            type: 'command:ungroup',
+            payload: { groupName: 'Work' },
+        })
+        expect(refreshNowSpy).toHaveBeenCalled()
+        expect(preventDefault).toHaveBeenCalled()
+    })
+
+    it('dispatches extract_group command to background on extract click', async () => {
+        const { clickListener, runtimeSendMessageSpy } = await loadTabsAndCaptureMessageListener()
+        const preventDefault = vi.fn()
+
+        clickListener({
+            target: {
+                classList: {
+                    contains: vi.fn((className) => className === 'extract-group'),
+                },
+                closest: vi.fn(() => ({
+                    dataset: {
+                        group: 'Research',
+                    },
+                })),
+            },
+            preventDefault,
+        })
+
+        await Promise.resolve()
+
+        expect(runtimeSendMessageSpy).toHaveBeenCalledWith({
+            type: 'command:extract_group',
+            payload: { group: 'Research' },
+        })
+        expect(refreshNowSpy).toHaveBeenCalled()
+        expect(preventDefault).toHaveBeenCalled()
+    })
+
+    it('dispatches close_group command to background on close group click', async () => {
+        const { clickListener, runtimeSendMessageSpy } = await loadTabsAndCaptureMessageListener()
+        const preventDefault = vi.fn()
+
+        clickListener({
+            target: {
+                classList: {
+                    contains: vi.fn((className) => className === 'close-group'),
+                },
+                closest: vi.fn(() => ({
+                    dataset: {
+                        group: 'Work',
+                    },
+                })),
+            },
+            preventDefault,
+        })
+
+        await Promise.resolve()
+
+        expect(runtimeSendMessageSpy).toHaveBeenCalledWith({
+            type: 'command:close_group',
+            payload: { groupName: 'Work' },
+        })
+        expect(refreshNowSpy).toHaveBeenCalled()
+        expect(preventDefault).toHaveBeenCalled()
+    })
+
+    it('dispatches toggle_lock command to background on lock click', async () => {
+        const { clickListener, runtimeSendMessageSpy } = await loadTabsAndCaptureMessageListener()
+        const preventDefault = vi.fn()
+
+        clickListener({
+            target: {
+                classList: {
+                    contains: vi.fn((className) => className === 'lock'),
+                },
+                dataset: {
+                    url: 'https://example.com',
+                },
+            },
+            preventDefault,
+        })
+
+        await Promise.resolve()
+
+        expect(runtimeSendMessageSpy).toHaveBeenCalledWith({
+            type: 'command:toggle_lock',
+            payload: { url: 'https://example.com' },
+        })
+        expect(refreshNowSpy).toHaveBeenCalled()
+        expect(preventDefault).toHaveBeenCalled()
+    })
+
+    it('dispatches move_domain command to background on domain drop', async () => {
+        const { dropListener, runtimeSendMessageSpy } = await loadTabsAndCaptureMessageListener()
+        const stopPropagation = vi.fn()
+        const preventDefault = vi.fn()
+
+        dropListener({
+            stopPropagation,
+            preventDefault,
+            target: {
+                closest: vi.fn(() => ({
+                    dataset: {
+                        group: 'Work',
+                    },
+                })),
+            },
+            dataTransfer: {
+                getData: vi.fn(() => 'example.com'),
+            },
+        })
+
+        await Promise.resolve()
+        await Promise.resolve()
+
+        expect(runtimeSendMessageSpy).toHaveBeenCalledWith({
+            type: 'command:move_domain',
+            payload: { domain: 'example.com', newGroup: 'Work' },
+        })
+        expect(refreshNowSpy).toHaveBeenCalled()
+        expect(stopPropagation).toHaveBeenCalled()
     })
 })

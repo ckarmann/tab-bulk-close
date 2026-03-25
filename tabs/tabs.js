@@ -2,12 +2,6 @@ import { setDirtyAndRefresh, refreshNow } from './tabs_view.js';
 import StateService from '/js/state_service.js'
 import TabsService from '/js/tabs_service.js'
 import Filters from '/js/filters.js'
-import addGroupCommand from '/js/app/commands/add_group.js'
-import ungroupCommand from '/js/app/commands/ungroup.js'
-import moveDomainCommand from '/js/app/commands/move_domain.js'
-import toggleLockCommand from '/js/app/commands/toggle_lock.js'
-import closeGroupCommand from '/js/app/commands/close_group.js'
-import extractGroupCommand from '/js/app/commands/extract_group.js'
 
 document.addEventListener("DOMContentLoaded", setDirtyAndRefresh);
 
@@ -32,11 +26,12 @@ export function handleDragEnd(e) {
 }
 
 async function moveDomainToGroup(newGroup, domain) {
-    await moveDomainCommand({
-        domain,
-        newGroup,
-        onChanged: refreshNow,
-    });
+    await dispatchCommandAndRefresh({
+            type: 'command:move_domain',
+            payload: { domain, newGroup },
+        },
+        'Failed to dispatch move_domain command'
+    );
 }
 
 export function handleDrop(e) {
@@ -158,45 +153,72 @@ document.addEventListener("keyup", (e) => {
 
 // locking
 async function toggleLock(url) {
-    await toggleLockCommand({
-        url,
-        onChanged: refreshNow,
-    });
+    await dispatchCommandAndRefresh(
+        {
+            type: 'command:toggle_lock',
+            payload: { url },
+        },
+        'Failed to dispatch toggle_lock command'
+    );
 }
 
 
 // group actions
 
 async function extractGroup(group) {
-    await extractGroupCommand({
-        group,
-        onChanged: refreshNow,
-    });
+    await dispatchCommandAndRefresh(
+        {
+            type: 'command:extract_group',
+            payload: { group },
+        },
+        'Failed to dispatch extract_group command'
+    );
 }
 
 
 async function closeGroup(groupName) {
-    await closeGroupCommand({
-        groupName,
-        onChanged: refreshNow,
-    });
+    await dispatchCommandAndRefresh(
+        {
+            type: 'command:close_group',
+            payload: { groupName },
+        },
+        'Failed to dispatch close_group command'
+    );
+}
+
+async function dispatchCommandAndRefresh(message, errorPrefix) {
+    try {
+        const response = await browser.runtime.sendMessage(message);
+
+        if (response?.ok) {
+            refreshNow();
+        }
+    } catch (error) {
+        console.error(`${errorPrefix}:`, error);
+    }
 }
 
 
 // group management
 async function addGroup(newGroupName) {
-    await addGroupCommand({
-        newGroupName,
-        onChanged: refreshNow,
-    });
+    await dispatchCommandAndRefresh(
+        {
+            type: 'command:add_group',
+            payload: { newGroupName },
+        },
+        'Failed to dispatch add_group command'
+    );
 }
 
 
 async function ungroup(groupName) {
-    await ungroupCommand({
-        groupName,
-        onChanged: refreshNow,
-    });
+    await dispatchCommandAndRefresh(
+        {
+            type: 'command:ungroup',
+            payload: { groupName },
+        },
+        'Failed to dispatch ungroup command'
+    );
 }
 
 async function getLiveUrls() {
