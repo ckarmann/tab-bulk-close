@@ -8,6 +8,8 @@ async function markTabAccessTime(tab) {
     return browser.sessions.setTabValue(tab.id, "lastUpdatedOrAccessed", Date.now());
 }
 
+let lastFocusedWindow = -1;
+
 function openTab() {
     // switch to plugin's tab or open it.
     const page_url = browser.runtime.getURL("tabs/tabs.html"); 
@@ -72,6 +74,30 @@ browser.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
         }
     } catch (error) {
         console.error('Failed to handle tabs.onUpdated:', error);
+    }
+})
+
+browser.windows.onFocusChanged.addListener(async (windowId) => {
+    console.log(`The window ${windowId} is focused. Last one was ${lastFocusedWindow}.`);
+
+    try {
+        if (windowId !== -1 && lastFocusedWindow !== windowId) {
+            const tabs = await browser.tabs.query({
+                windowId,
+                active: true,
+            });
+
+            if (tabs.length === 0) {
+                // this may happen if the new focused window is the Developer Tools window for example.
+                console.debug("No active tabs in window " + windowId);
+            } else {
+                lastFocusedWindow = windowId;
+                await markTabAccessTime(tabs[0]);
+                await notifyStateChanged('tab_activated', { changedTabIds: [tabs[0].id] });
+            }
+        }
+    } catch (error) {
+        console.error('Failed to handle windows.onFocusChanged:', error);
     }
 })
 

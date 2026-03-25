@@ -208,25 +208,6 @@ async function getLiveUrls() {
     return urls;
 }
 
-var lastFocusedWindow = -1;
-browser.windows.onFocusChanged.addListener(async (windowId) => {
-    console.log(`The window ${windowId} is focused. Last one was ${lastFocusedWindow}.`);
-    if (windowId != -1 && lastFocusedWindow != windowId) {
-        const tabs = await browser.tabs.query({
-            "windowId": windowId,
-            "active": true
-        });
-        if (tabs.length == 0) {
-            // this may happen if the new focused window is the Developer Tools window for example.
-            console.debug("No active tabs in window " + windowId);
-        } else {
-            lastFocusedWindow = windowId;
-            await markTabAccessTime(tabs[0]);
-            refreshNow();
-        }
-    }
-})
-
 browser.runtime.onMessage.addListener((message) => {
     if (message?.type === 'state_changed') {
 
@@ -252,10 +233,5 @@ browser.runtime.onMessage.addListener((message) => {
         }
     }
 });
-
-// Listeners for tab activity
-async function markTabAccessTime(tab) {
-    return TabsService.setTabValue(tab, "lastUpdatedOrAccessed", Date.now());
-}
 
 Filters.init(refreshNow);
