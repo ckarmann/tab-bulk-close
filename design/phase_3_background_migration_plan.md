@@ -110,3 +110,19 @@ Move browser tab/window lifecycle handling from the tabs page runtime to the bac
 - Keep this phase focused on runtime ownership, not business-logic rewrites.
 - Avoid mixing Phase 3 with repository/domain extraction to reduce regression risk.
 - If needed, keep temporary compatibility shims and remove them in a cleanup PR after stabilization.
+
+## Current Status (2026-03-25)
+
+- Completed:
+  - Step 1 message contract documented.
+  - Step 2 message router implemented in [js/app/message_router.js](js/app/message_router.js).
+  - Step 3 notify helper implemented in [js/shared/background_notify.js](js/shared/background_notify.js).
+  - Step 4 lifecycle listeners centralized in [js/background.js](js/background.js).
+  - Step 5 command invocation routed in background.
+  - Step 6 tabs page runtime simplified in [tabs/tabs.js](tabs/tabs.js): state_changed now triggers query-based rerender.
+  - Step 7 UI command actions routed through runtime messages.
+  - Step 8 snapshot query path implemented in [js/app/queries/get_tabs_snapshot.js](js/app/queries/get_tabs_snapshot.js).
+
+- Remaining:
+  - Step 9 commit slicing (process task, not code behavior).
+  - Step 10 targeted tests and stabilization are in progress and currently green.

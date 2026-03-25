@@ -1,9 +1,9 @@
-import { setDirtyAndRefresh, refreshNow } from './tabs_view.js';
-import StateService from '/js/state_service.js'
-import TabsService from '/js/tabs_service.js'
+import renderTabsView from '/js/ui/renderers/tabs_renderer.js'
 import Filters from '/js/filters.js'
 
-document.addEventListener("DOMContentLoaded", setDirtyAndRefresh);
+document.addEventListener("DOMContentLoaded", () => {
+    requestSnapshotAndRender();
+});
 
 
 // Drag and drop of domains over groups
@@ -191,7 +191,7 @@ async function dispatchCommandAndRefresh(message, errorPrefix) {
         const response = await browser.runtime.sendMessage(message);
 
         if (response?.ok) {
-            refreshNow();
+            await requestSnapshotAndRender();
         }
     } catch (error) {
         console.error(`${errorPrefix}:`, error);
@@ -221,29 +221,45 @@ async function ungroup(groupName) {
     );
 }
 
-async function getLiveUrls() {
-    let tabs = await TabsService.getAllTabs();
-    let urls = []
-    for (let tab of tabs) {
-        urls.push(tab.url)
+function delay(milliseconds) {
+    return new Promise((resolve) => {
+        setTimeout(resolve, milliseconds);
+    });
+}
+
+async function requestSnapshotAndRender(delayMs = 0) {
+    if (delayMs > 0) {
+        await delay(delayMs);
     }
-    return urls;
+
+    try {
+        const response = await browser.runtime.sendMessage({
+            type: 'query:get_tabs_snapshot',
+            payload: {},
+        });
+
+        if (response?.ok && response?.result?.viewModel) {
+            renderTabsView(response.result.viewModel);
+        }
+    } catch (error) {
+        console.error('Failed to fetch tabs snapshot:', error);
+    }
 }
 
 browser.runtime.onMessage.addListener((message) => {
     if (message?.type === 'state_changed') {
 
         if (message?.payload?.reason === 'tab_created') {
-            setDirtyAndRefresh(250);
+            requestSnapshotAndRender(250);
         }
         else if (message?.payload?.reason === 'tab_removed') {
-            setDirtyAndRefresh(250);
+            requestSnapshotAndRender(250);
         }
         else if (message?.payload?.reason === 'tab_activated') {
-            refreshNow();
+            requestSnapshotAndRender();
         }
         else if (message?.payload?.reason === 'tab_updated') {
-            refreshNow();
+            requestSnapshotAndRender();
         }
         else if (message?.payload?.reason === 'tab_updated_title') {
             // don't refresh the whole page.
@@ -256,4 +272,4 @@ browser.runtime.onMessage.addListener((message) => {
     }
 });
 
-Filters.init(refreshNow);
+Filters.init(requestSnapshotAndRender);

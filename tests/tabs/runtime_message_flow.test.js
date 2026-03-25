@@ -1,22 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const {
-    setDirtyAndRefreshSpy,
-    refreshNowSpy,
+    renderTabsViewSpy,
     filtersInitSpy,
     tabsServiceSetValueSpy,
     runtimeSendMessageSpy,
 } = vi.hoisted(() => ({
-    setDirtyAndRefreshSpy: vi.fn(),
-    refreshNowSpy: vi.fn(),
+    renderTabsViewSpy: vi.fn(),
     filtersInitSpy: vi.fn(),
     tabsServiceSetValueSpy: vi.fn().mockResolvedValue(undefined),
     runtimeSendMessageSpy: vi.fn().mockResolvedValue({ ok: true }),
 }))
 
-vi.mock('/tabs/tabs_view.js', () => ({
-    setDirtyAndRefresh: (...args) => setDirtyAndRefreshSpy(...args),
-    refreshNow: (...args) => refreshNowSpy(...args),
+vi.mock('/js/ui/renderers/tabs_renderer.js', () => ({
+    default: (...args) => renderTabsViewSpy(...args),
 }))
 
 vi.mock('/js/state_service.js', () => ({ default: {} }))
@@ -34,8 +31,7 @@ vi.mock('/js/filters.js', () => ({
 async function loadTabsAndCaptureMessageListener() {
     vi.resetModules()
 
-    setDirtyAndRefreshSpy.mockReset()
-    refreshNowSpy.mockReset()
+    renderTabsViewSpy.mockReset()
     filtersInitSpy.mockReset()
     runtimeSendMessageSpy.mockReset()
     runtimeSendMessageSpy.mockResolvedValue({ ok: true })
@@ -126,29 +122,43 @@ describe('tabs runtime message flow', () => {
     })
 
     it('refreshes page when receiving state_changed for tab_created', async () => {
+        vi.useFakeTimers()
         const { listener } = await loadTabsAndCaptureMessageListener()
 
         listener({ type: 'state_changed', payload: { reason: 'tab_created' } })
 
-        expect(setDirtyAndRefreshSpy).toHaveBeenCalledWith(250)
+        await vi.advanceTimersByTimeAsync(250)
+        expect(runtimeSendMessageSpy).toHaveBeenCalledWith({
+            type: 'query:get_tabs_snapshot',
+            payload: {},
+        })
+        vi.useRealTimers()
     })
 
     it('refreshes page when receiving state_changed for tab_removed', async () => {
+        vi.useFakeTimers()
         const { listener } = await loadTabsAndCaptureMessageListener()
 
         listener({ type: 'state_changed', payload: { reason: 'tab_removed' } })
 
-        expect(setDirtyAndRefreshSpy).toHaveBeenCalledWith(250)
+        await vi.advanceTimersByTimeAsync(250)
+        expect(runtimeSendMessageSpy).toHaveBeenCalledWith({
+            type: 'query:get_tabs_snapshot',
+            payload: {},
+        })
+        vi.useRealTimers()
     })
 
     it('does not refresh for unrelated messages', async () => {
         const { listener } = await loadTabsAndCaptureMessageListener()
 
-        listener({ type: 'state_changed', payload: { reason: 'tab_updated' } })
         listener({ type: 'other_event', payload: { reason: 'tab_created' } })
         listener(null)
 
-        expect(setDirtyAndRefreshSpy).not.toHaveBeenCalled()
+        expect(runtimeSendMessageSpy).not.toHaveBeenCalledWith({
+            type: 'query:get_tabs_snapshot',
+            payload: {},
+        })
     })
 
     it('updates displayed tab title when receiving tab_updated_title', async () => {
@@ -165,7 +175,10 @@ describe('tabs runtime message flow', () => {
 
         expect(querySelectorSpy).toHaveBeenCalledWith(".switch-tabs[data-tab-id='123']")
         expect(linkElement.textContent).toBe('New tab title')
-        expect(refreshNowSpy).not.toHaveBeenCalled()
+        expect(runtimeSendMessageSpy).not.toHaveBeenCalledWith({
+            type: 'query:get_tabs_snapshot',
+            payload: {},
+        })
     })
 
     it('does not throw when tab_updated_title target element is missing', async () => {
@@ -183,7 +196,10 @@ describe('tabs runtime message flow', () => {
             })
         }).not.toThrow()
 
-        expect(refreshNowSpy).not.toHaveBeenCalled()
+        expect(runtimeSendMessageSpy).not.toHaveBeenCalledWith({
+            type: 'query:get_tabs_snapshot',
+            payload: {},
+        })
     })
 
     it('dispatches add_group command to background on add-group click', async () => {
@@ -206,7 +222,10 @@ describe('tabs runtime message flow', () => {
             type: 'command:add_group',
             payload: { newGroupName: '  Work  ' },
         })
-        expect(refreshNowSpy).toHaveBeenCalled()
+        expect(runtimeSendMessageSpy).toHaveBeenCalledWith({
+            type: 'query:get_tabs_snapshot',
+            payload: {},
+        })
         expect(preventDefault).toHaveBeenCalled()
     })
 
@@ -234,7 +253,10 @@ describe('tabs runtime message flow', () => {
             type: 'command:ungroup',
             payload: { groupName: 'Work' },
         })
-        expect(refreshNowSpy).toHaveBeenCalled()
+        expect(runtimeSendMessageSpy).toHaveBeenCalledWith({
+            type: 'query:get_tabs_snapshot',
+            payload: {},
+        })
         expect(preventDefault).toHaveBeenCalled()
     })
 
@@ -262,7 +284,10 @@ describe('tabs runtime message flow', () => {
             type: 'command:extract_group',
             payload: { group: 'Research' },
         })
-        expect(refreshNowSpy).toHaveBeenCalled()
+        expect(runtimeSendMessageSpy).toHaveBeenCalledWith({
+            type: 'query:get_tabs_snapshot',
+            payload: {},
+        })
         expect(preventDefault).toHaveBeenCalled()
     })
 
@@ -290,7 +315,10 @@ describe('tabs runtime message flow', () => {
             type: 'command:close_group',
             payload: { groupName: 'Work' },
         })
-        expect(refreshNowSpy).toHaveBeenCalled()
+        expect(runtimeSendMessageSpy).toHaveBeenCalledWith({
+            type: 'query:get_tabs_snapshot',
+            payload: {},
+        })
         expect(preventDefault).toHaveBeenCalled()
     })
 
@@ -316,7 +344,10 @@ describe('tabs runtime message flow', () => {
             type: 'command:toggle_lock',
             payload: { url: 'https://example.com' },
         })
-        expect(refreshNowSpy).toHaveBeenCalled()
+        expect(runtimeSendMessageSpy).toHaveBeenCalledWith({
+            type: 'query:get_tabs_snapshot',
+            payload: {},
+        })
         expect(preventDefault).toHaveBeenCalled()
     })
 
@@ -347,7 +378,10 @@ describe('tabs runtime message flow', () => {
             type: 'command:move_domain',
             payload: { domain: 'example.com', newGroup: 'Work' },
         })
-        expect(refreshNowSpy).toHaveBeenCalled()
+        expect(runtimeSendMessageSpy).toHaveBeenCalledWith({
+            type: 'query:get_tabs_snapshot',
+            payload: {},
+        })
         expect(stopPropagation).toHaveBeenCalled()
     })
 })

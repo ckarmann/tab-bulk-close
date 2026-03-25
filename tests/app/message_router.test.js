@@ -41,7 +41,7 @@ describe('message router', () => {
         const router = createMessageRouter()
 
         const result = await router({
-            type: 'query:get_tabs_snapshot',
+            type: 'query:does_not_exist',
             payload: {},
             requestId: 'r2',
         })
@@ -51,8 +51,28 @@ describe('message router', () => {
             requestId: 'r2',
             error: {
                 code: 'unknown_type',
-                message: 'Unsupported message type: query:get_tabs_snapshot',
+                message: 'Unsupported message type: query:does_not_exist',
             },
+        })
+    })
+
+    it('dispatches query handler and returns snapshot dto', async () => {
+        const handler = vi.fn().mockResolvedValue({ viewModel: { groups: [], windows: [] } })
+        const router = createMessageRouter({
+            'query:get_tabs_snapshot': handler,
+        })
+
+        const result = await router({
+            type: 'query:get_tabs_snapshot',
+            payload: {},
+            requestId: 'r2b',
+        })
+
+        expect(handler).toHaveBeenCalledWith({})
+        expect(result).toEqual({
+            ok: true,
+            requestId: 'r2b',
+            result: { viewModel: { groups: [], windows: [] } },
         })
     })
 

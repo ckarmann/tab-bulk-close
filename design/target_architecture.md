@@ -261,8 +261,8 @@ Contract notes:
     - `js/infra/repositories/tab_state_repository.js`
     - `js/infra/browser/tabs_gateway.js`
     - `js/infra/browser/sessions_gateway.js`
-- Current `tabs/tabs_view.js`
-  - Split into:
+- Legacy `tabs/tabs_view.js`
+  - Extraction completed into:
     - `js/ui/presenters/tabs_presenter.js`
     - `js/ui/renderers/tabs_renderer.js`
 - Current `tabs/tabs.js`

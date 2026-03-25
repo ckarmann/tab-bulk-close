@@ -4,6 +4,7 @@ import moveDomainCommand from '/js/app/commands/move_domain.js'
 import toggleLockCommand from '/js/app/commands/toggle_lock.js'
 import closeGroupCommand from '/js/app/commands/close_group.js'
 import extractGroupCommand from '/js/app/commands/extract_group.js'
+import getTabsSnapshotQuery from '/js/app/queries/get_tabs_snapshot.js'
 
 const defaultHandlers = {
     'command:add_group': addGroupCommand,
@@ -12,6 +13,7 @@ const defaultHandlers = {
     'command:toggle_lock': toggleLockCommand,
     'command:close_group': closeGroupCommand,
     'command:extract_group': extractGroupCommand,
+    'query:get_tabs_snapshot': getTabsSnapshotQuery,
 }
 
 function makeErrorResponse(code, message, requestId) {
