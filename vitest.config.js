@@ -17,8 +17,10 @@ export default defineConfig({
             reportsDirectory: 'coverage',
             include: [
                 'js/app/**/*.js',
+                'tabs/**/*.js',
                 'js/ui/presenters/**/*.js',
                 'js/ui/renderers/**/*.js',
+                'js/*.js'
             ],
         },
     },

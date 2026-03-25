@@ -227,51 +227,35 @@ browser.windows.onFocusChanged.addListener(async (windowId) => {
     }
 })
 
+browser.runtime.onMessage.addListener((message) => {
+    if (message?.type === 'state_changed') {
+
+        if (message?.payload?.reason === 'tab_created') {
+            setDirtyAndRefresh(250);
+        }
+        else if (message?.payload?.reason === 'tab_removed') {
+            setDirtyAndRefresh(250);
+        }
+        else if (message?.payload?.reason === 'tab_activated') {
+            refreshNow();
+        }
+        else if (message?.payload?.reason === 'tab_updated') {
+            refreshNow();
+        }
+        else if (message?.payload?.reason === 'tab_updated_title') {
+            // don't refresh the whole page.
+            var tabId = message.payload.changedTabIds[0];
+            var linkElement = document.querySelector(`.switch-tabs[data-tab-id='${tabId}']`);
+            if (linkElement) {
+                linkElement.textContent = message.payload.title;
+            }
+        }
+    }
+});
+
 // Listeners for tab activity
-browser.tabs.onCreated.addListener((tab) => {
-    console.log(`The tab with id: ${tab.id}, is being created.`);
-    tab.createdAt = Date.now();
-    setDirtyAndRefresh(250);
-});
-
-
-browser.tabs.onRemoved.addListener((tabId, removeInfo) => {
-    //console.log(`The tab with id: ${tabId}, is closing`);
-    setDirtyAndRefresh(250);
-});
-
 async function markTabAccessTime(tab) {
     return TabsService.setTabValue(tab, "lastUpdatedOrAccessed", Date.now());
 }
-
-browser.tabs.onActivated.addListener((activeInfo) => {
-    console.log(`onActivated: ${JSON.stringify(activeInfo)}`);
-    const tabId = activeInfo.tabId;
-    browser.tabs.get(tabId)
-    .then(markTabAccessTime)
-    .then(refreshNow());
-})
-
-browser.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
-    console.log(`Tab with id: ${tabId} had change: ${JSON.stringify(changeInfo)}. active=${tab.active}`);
-
-    if ("title" in changeInfo) {
-        // don't refresh the whole page.
-        var linkElement = document.querySelector(`.switch-tabs[data-tab-id='${tabId}']`);
-        linkElement.textContent = changeInfo.title;
-    }
-    if (tab.active) {
-        if ("url" in changeInfo) {
-            browser.tabs.get(tabId)
-            .then(markTabAccessTime)
-            .then(refreshNow());
-        }
-        if ("status" in changeInfo && changeInfo["status"] == "complete") {
-            browser.tabs.get(tabId)
-            .then(markTabAccessTime)
-            .then(refreshNow());
-        }
-    }
-})
 
 Filters.init(refreshNow);
