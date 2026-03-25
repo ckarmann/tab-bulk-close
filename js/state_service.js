@@ -196,16 +196,6 @@ export default {
     },
 
     enrichTabs: function(tabs, state) {
-        // calculate days for date filtering.
-        let tmpDate = new Date();
-        const today = getIsoDay(tmpDate);
-        tmpDate.setDate(tmpDate.getDate() - 1);
-        const yesterday = getIsoDay(tmpDate);
-        tmpDate = new Date(); tmpDate.setDate(tmpDate.getDate() - 7);
-        const oneWeekAgo = getIsoDay(tmpDate);
-        tmpDate = new Date(); tmpDate.setMonth(tmpDate.getMonth() - 1);
-        const oneMonthAgo = getIsoDay(tmpDate);
-
         for (let tab of tabs) {
             tab.urlWithoutHash = getUrlWithoutHash(tab.url)
             tab.locked = state.isLocked(tab.url);

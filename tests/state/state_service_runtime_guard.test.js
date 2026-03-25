@@ -8,20 +8,8 @@ vi.mock('/js/filters.js', () => ({
     },
 }))
 
-async function loadStateServiceWithGlobals({ dayjs, relativeTimePlugin } = {}) {
+async function loadStateServiceWithGlobals() {
     vi.resetModules()
-
-    if (dayjs) {
-        globalThis.dayjs = dayjs
-    } else {
-        delete globalThis.dayjs
-    }
-
-    if (relativeTimePlugin) {
-        globalThis.dayjs_plugin_relativeTime = relativeTimePlugin
-    } else {
-        delete globalThis.dayjs_plugin_relativeTime
-    }
 
     const module = await import('/js/state_service.js')
     return module.default
