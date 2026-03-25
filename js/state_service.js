@@ -1,6 +1,7 @@
 import Filters from '/js/filters.js'
+import { getDayjs } from '/js/dayjs/runtime.js'
 
-dayjs.extend(window.dayjs_plugin_relativeTime);
+const dayjsApi = getDayjs();
 
 function cleanMapping(mapping, groups) {
     
@@ -210,28 +211,29 @@ export default {
             tab.locked = state.isLocked(tab.url);
 
             var accessedTimeColor;
-            var accessedTime ;
+            var accessedTime;
             if (tab.timeValue !== undefined) {
-                accessedTime = dayjs(tab.timeValue);
-                accessedTimeColor="black";
+                accessedTime = dayjsApi(tab.timeValue);
+                accessedTimeColor = "black";
             } else {
                 // console.log("Undefined timeValue for " + tab.id + ": " + tab.title);
-                accessedTime = dayjs(tab.lastAccessed);
-                accessedTimeColor="red";
+                accessedTime = dayjsApi(tab.lastAccessed);
+                accessedTimeColor = "red";
             }
 
             tab.lastAccessedFriendly = accessedTime.fromNow();
             tab.lastAccessedString = accessedTime.format();
+
             tab.lastAccessedColor = accessedTimeColor;
 
-            if (accessedTime >= dayjs().subtract(1, 'day')) {
+            if (accessedTime >= dayjsApi().subtract(1, 'day')) {
                 tab.today = true;
                 tab.dayFilter = "today";
-            } else if (accessedTime >= dayjs().subtract(2, 'day')) {
+            } else if (accessedTime >= dayjsApi().subtract(2, 'day')) {
                 tab.dayFilter = "yesterday";
-            } else if (accessedTime >= dayjs().subtract(7, 'day')) {
+            } else if (accessedTime >= dayjsApi().subtract(7, 'day')) {
                 tab.dayFilter = "thisWeek";
-            } else if (accessedTime >= dayjs().subtract(1, 'month')) {
+            } else if (accessedTime >= dayjsApi().subtract(1, 'month')) {
                 tab.dayFilter = "thisMonth";
             } else {
                 tab.dayFilter = "older";
