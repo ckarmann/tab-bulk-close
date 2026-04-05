@@ -18,8 +18,8 @@ function attributeWindowColor(windowId) {
     return newColor;
 }
 
-export default function buildTabsViewModel(tabs, state) {
-    StateService.enrichTabs(tabs, state);
+export default function buildTabsViewModel(tabs, state, activeFilters = {}) {
+    StateService.enrichTabs(tabs, state, activeFilters);
 
     const [groups, groupMap, domainMap] = state.applyGrouping(tabs);
     const groupObjectList = [];

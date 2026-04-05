@@ -8,7 +8,7 @@ var _tabStatePolyfill = (function(undefined){
         return {
             getTabValue: function(tab, key) {
                 if (log) {
-                    console.log("getTabValue for tab " + tab.id + " and key " + key);
+                    // console.log("getTabValue for tab " + tab.id + " and key " + key);
                 }
                 return browser.sessions.getTabValue(tab.id, key);
             },

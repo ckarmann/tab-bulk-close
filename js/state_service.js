@@ -1,5 +1,5 @@
-import Filters from '/js/filters.js'
 import { getDayjs } from '/js/dayjs/runtime.js'
+import { matchesActiveFilters } from '/js/shared/filter_state.js'
 
 const dayjsApi = getDayjs();
 
@@ -42,10 +42,6 @@ function getIsoDay(date) {
     } else {
         return new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().substr(0,10);
     }
-}
-
-function filterTab(tab) {
-    return Filters.filter(tab);
 }
 
 export default {
@@ -185,6 +181,7 @@ export default {
     },
 
     toggleLock : async function(url) {
+        console.log("Toggling lock for " + url);
         const state = await this.loadState();
         const index = state.lockedUrls.indexOf(url);
         if (index > -1) {
@@ -195,7 +192,8 @@ export default {
         await this.saveState(state);
     },
 
-    enrichTabs: function(tabs, state) {
+    enrichTabs: function(tabs, state, activeFilters = {}) {
+        console.log("Enriching tabs");
         for (let tab of tabs) {
             tab.urlWithoutHash = getUrlWithoutHash(tab.url)
             tab.locked = state.isLocked(tab.url);
@@ -235,7 +233,7 @@ export default {
             if (duplicateTabs.includes(tab)) {
                 tab.duplicate = true;
             }
-            tab.filtered = filterTab(tab);
+            tab.filtered = matchesActiveFilters(tab, activeFilters);
         }
     }
 }

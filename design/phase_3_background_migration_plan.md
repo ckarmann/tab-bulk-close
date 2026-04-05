@@ -111,7 +111,7 @@ Move browser tab/window lifecycle handling from the tabs page runtime to the bac
 - Avoid mixing Phase 3 with repository/domain extraction to reduce regression risk.
 - If needed, keep temporary compatibility shims and remove them in a cleanup PR after stabilization.
 
-## Current Status (2026-03-25)
+## Current Status (2026-04-05)
 
 - Completed:
   - Step 1 message contract documented.
@@ -119,10 +119,14 @@ Move browser tab/window lifecycle handling from the tabs page runtime to the bac
   - Step 3 notify helper implemented in [js/shared/background_notify.js](js/shared/background_notify.js).
   - Step 4 lifecycle listeners centralized in [js/background.js](js/background.js).
   - Step 5 command invocation routed in background.
-  - Step 6 tabs page runtime simplified in [tabs/tabs.js](tabs/tabs.js): state_changed now triggers query-based rerender.
+  - Step 6 tabs page runtime simplified in [tabs/tabs.js](tabs/tabs.js): state_changed triggers query-based rerender.
   - Step 7 UI command actions routed through runtime messages.
   - Step 8 snapshot query path implemented in [js/app/queries/get_tabs_snapshot.js](js/app/queries/get_tabs_snapshot.js).
+  - Step 10 targeted tests are in place and passing for message router, background lifecycle notifications, and tabs runtime refresh flow.
+
+- Clarification introduced during stabilization:
+  - Query snapshot payload now carries `activeFilters` so presenter-driven filtering remains correct even though view-model generation happens in background.
+  - Command `command:close_group` also receives `activeFilters`, ensuring close behavior matches the currently displayed filtered subset.
 
 - Remaining:
-  - Step 9 commit slicing (process task, not code behavior).
-  - Step 10 targeted tests and stabilization are in progress and currently green.
+  - Step 9 commit slicing is a delivery/process task and can be done as two commits as originally planned.

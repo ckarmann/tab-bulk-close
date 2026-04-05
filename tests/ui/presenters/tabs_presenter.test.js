@@ -40,7 +40,7 @@ describe('tabs presenter', () => {
 
         const viewModel = buildTabsViewModel(tabs, state)
 
-        expect(enrichTabsSpy).toHaveBeenCalledWith(tabs, state)
+        expect(enrichTabsSpy).toHaveBeenCalledWith(tabs, state, {})
         expect(viewModel.groups).toHaveLength(2)
         expect(viewModel.groups[0]).toMatchObject({
             name: 'Work',
