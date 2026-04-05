@@ -1,15 +1,40 @@
 
-function turnOnFilter(control, target, state) {
-    const id = control.id;
-    if (state[id]) {
-        state[id].classList.remove("filter-on");
+import { matchesActiveFilters } from '/js/shared/filter_state.js'
+
+function getButtonDescriptor(target) {
+    return {
+        attributes: target.getAttribute("attributes"),
+        check: target.getAttribute("check") || null,
+        filterValue: target.getAttribute("filter-value") || null,
+    };
+}
+
+function descriptorMatchesButton(descriptor, button) {
+    if (!descriptor) {
+        return false;
     }
-    state[id] = target;
+    return descriptor.attributes === button.getAttribute("attributes") &&
+        (descriptor.check || null) === (button.getAttribute("check") || null) &&
+        (descriptor.filterValue || null) === (button.getAttribute("filter-value") || null);
+}
+
+function turnOnFilter(control, target, state) {
+    console.log("turning on filter for control " + control.id + " with button " + target.outerHTML);
+    const id = control.id;
+
+    if (state[id]) {
+        const previous = control.querySelector("filter-button.filter-on");
+        if (previous) {
+            previous.classList.remove("filter-on");
+        }
+    }
+    state[id] = getButtonDescriptor(target);
     target.classList.add("filter-on");
 }
 
 
 function turnOffFilter(control, target, state) {
+    console.log("turning off filter for control " + control.id);
     const id = control.id;
     target.classList.remove("filter-on");
     state[id] = null;
@@ -27,6 +52,7 @@ export default {
             }
 
             if (target) {
+                console.log("filter button clicked: " + target.outerHTML);
                 const control = target.closest("filter-control");
                 if (target.classList.contains("filter-on")) {
                     turnOffFilter(control, target, this.state);
@@ -43,18 +69,10 @@ export default {
     applyFilterState: function(control) {
         const state = this.state[control.id];
 
-        const compareAttr = function(state, button, key) {
-            return state.attributes[key] == button.attributes[key] ||
-                state.attributes[key].value == button.attributes[key].value
-        }
-
         if (state) {
             const filterButtons = control.querySelectorAll("filter-button");
             for (let button of filterButtons) {
-                if (compareAttr(state, button, "attributes") &&
-                    compareAttr(state, button, "check") &&
-                    compareAttr(state, button, "filter-value")
-                ) {
+                if (descriptorMatchesButton(state, button)) {
                     turnOnFilter(control, button, this.state);
                     return;
                 }
@@ -63,32 +81,7 @@ export default {
     },
 
     filter: function(object) {
-        for (let filter of Object.values(this.state)) {
-            if (filter) {
-                const attributes = filter.attributes["attributes"].value.split(",");
-                const negativeCheck = filter.attributes["check"] && filter.attributes["check"].value === "negative";
-                const valueCheck = filter.attributes["filter-value"] ? filter.attributes["filter-value"].value : undefined;
-                if (negativeCheck) {
-                    for (let attribute of attributes) {
-                        if (object[attribute] === true) {
-                            return false;
-                        }
-                    }  
-                } else if (valueCheck) {
-                    for (let attribute of attributes) {
-                        if (object[attribute].toString() !== valueCheck) {
-                            return false;
-                        }
-                    } 
-                } else {
-                    for (let attribute of attributes) {
-                        if (object[attribute] !== true) {
-                            return false;
-                        }
-                    }  
-                }
-            }
-        }
-        return true;
+        console.log("filtering object " + JSON.stringify(object) + " with state " + JSON.stringify(this.state));
+        return matchesActiveFilters(object, this.state);
     }
 }

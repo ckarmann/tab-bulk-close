@@ -180,7 +180,10 @@ async function closeGroup(groupName) {
     await dispatchCommandAndRefresh(
         {
             type: 'command:close_group',
-            payload: { groupName },
+            payload: {
+                groupName,
+                activeFilters: Filters.state || {},
+            },
         },
         'Failed to dispatch close_group command'
     );
@@ -235,7 +238,9 @@ async function requestSnapshotAndRender(delayMs = 0) {
     try {
         const response = await browser.runtime.sendMessage({
             type: 'query:get_tabs_snapshot',
-            payload: {},
+            payload: {
+                activeFilters: Filters.state || {},
+            },
         });
 
         if (response?.ok && response?.result?.viewModel) {
