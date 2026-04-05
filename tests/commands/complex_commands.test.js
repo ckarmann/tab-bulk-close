@@ -58,6 +58,45 @@ describe('complex command modules', () => {
         expect(result).toEqual({ ok: true, groupName: 'Work', closedCount: 1 })
     })
 
+    it('closeGroupCommand uses activeFilters payload when provided', async () => {
+        const state = {
+            isLocked: vi.fn(() => false),
+            isTabInGroup: vi.fn((url, groupName) => groupName === 'Work' && url.includes('work')),
+        }
+        const stateService = {
+            loadState: vi.fn().mockResolvedValue(state),
+            enrichTabs: vi.fn((tabs) => tabs),
+        }
+        const tabs = [
+            { id: 1, url: 'https://work.example/a', pinned: false, duplicate: true },
+            { id: 2, url: 'https://work.example/b', pinned: false, duplicate: false },
+        ]
+        const tabsService = {
+            getAllTabs: vi.fn().mockResolvedValue(tabs),
+        }
+        const tabsGateway = {
+            remove: vi.fn().mockResolvedValue(undefined),
+        }
+
+        const result = await closeGroupCommand({
+            groupName: 'Work',
+            activeFilters: {
+                'filter-duplicates': {
+                    attributes: 'duplicate',
+                    check: null,
+                    filterValue: null,
+                },
+            },
+            stateService,
+            tabsService,
+            tabsGateway,
+        })
+
+        expect(tabsGateway.remove).toHaveBeenCalledTimes(1)
+        expect(tabsGateway.remove).toHaveBeenCalledWith(1)
+        expect(result).toEqual({ ok: true, groupName: 'Work', closedCount: 1 })
+    })
+
     it('extractGroupCommand focuses the existing window when the group already occupies it', async () => {
         const state = {
             applyGrouping: vi.fn(() => [[], { Work: ['example.com'] }, { 'example.com': [

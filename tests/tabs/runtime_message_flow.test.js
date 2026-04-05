@@ -25,6 +25,7 @@ vi.mock('/js/tabs_service.js', () => ({
 }))
 vi.mock('/js/filters.js', () => ({
     default: {
+        state: {},
         init: (...args) => filtersInitSpy(...args),
     },
 }))
@@ -117,6 +118,13 @@ async function loadTabsAndCaptureMessageListener() {
 }
 
 describe('tabs runtime message flow', () => {
+    const snapshotRequestMatcher = {
+        type: 'query:get_tabs_snapshot',
+        payload: expect.objectContaining({
+            activeFilters: expect.any(Object),
+        }),
+    }
+
     beforeEach(() => {
         vi.clearAllMocks()
     })
@@ -128,10 +136,7 @@ describe('tabs runtime message flow', () => {
         listener({ type: 'state_changed', payload: { reason: 'tab_created' } })
 
         await vi.advanceTimersByTimeAsync(250)
-        expect(runtimeSendMessageSpy).toHaveBeenCalledWith({
-            type: 'query:get_tabs_snapshot',
-            payload: {},
-        })
+        expect(runtimeSendMessageSpy).toHaveBeenCalledWith(snapshotRequestMatcher)
         vi.useRealTimers()
     })
 
@@ -142,10 +147,7 @@ describe('tabs runtime message flow', () => {
         listener({ type: 'state_changed', payload: { reason: 'tab_removed' } })
 
         await vi.advanceTimersByTimeAsync(250)
-        expect(runtimeSendMessageSpy).toHaveBeenCalledWith({
-            type: 'query:get_tabs_snapshot',
-            payload: {},
-        })
+        expect(runtimeSendMessageSpy).toHaveBeenCalledWith(snapshotRequestMatcher)
         vi.useRealTimers()
     })
 
@@ -155,10 +157,7 @@ describe('tabs runtime message flow', () => {
         listener({ type: 'other_event', payload: { reason: 'tab_created' } })
         listener(null)
 
-        expect(runtimeSendMessageSpy).not.toHaveBeenCalledWith({
-            type: 'query:get_tabs_snapshot',
-            payload: {},
-        })
+        expect(runtimeSendMessageSpy).not.toHaveBeenCalledWith(snapshotRequestMatcher)
     })
 
     it('updates displayed tab title when receiving tab_updated_title', async () => {
@@ -175,10 +174,7 @@ describe('tabs runtime message flow', () => {
 
         expect(querySelectorSpy).toHaveBeenCalledWith(".switch-tabs[data-tab-id='123']")
         expect(linkElement.textContent).toBe('New tab title')
-        expect(runtimeSendMessageSpy).not.toHaveBeenCalledWith({
-            type: 'query:get_tabs_snapshot',
-            payload: {},
-        })
+        expect(runtimeSendMessageSpy).not.toHaveBeenCalledWith(snapshotRequestMatcher)
     })
 
     it('does not throw when tab_updated_title target element is missing', async () => {
@@ -196,10 +192,7 @@ describe('tabs runtime message flow', () => {
             })
         }).not.toThrow()
 
-        expect(runtimeSendMessageSpy).not.toHaveBeenCalledWith({
-            type: 'query:get_tabs_snapshot',
-            payload: {},
-        })
+        expect(runtimeSendMessageSpy).not.toHaveBeenCalledWith(snapshotRequestMatcher)
     })
 
     it('dispatches add_group command to background on add-group click', async () => {
@@ -222,10 +215,7 @@ describe('tabs runtime message flow', () => {
             type: 'command:add_group',
             payload: { newGroupName: '  Work  ' },
         })
-        expect(runtimeSendMessageSpy).toHaveBeenCalledWith({
-            type: 'query:get_tabs_snapshot',
-            payload: {},
-        })
+        expect(runtimeSendMessageSpy).toHaveBeenCalledWith(snapshotRequestMatcher)
         expect(preventDefault).toHaveBeenCalled()
     })
 
@@ -253,10 +243,7 @@ describe('tabs runtime message flow', () => {
             type: 'command:ungroup',
             payload: { groupName: 'Work' },
         })
-        expect(runtimeSendMessageSpy).toHaveBeenCalledWith({
-            type: 'query:get_tabs_snapshot',
-            payload: {},
-        })
+        expect(runtimeSendMessageSpy).toHaveBeenCalledWith(snapshotRequestMatcher)
         expect(preventDefault).toHaveBeenCalled()
     })
 
@@ -284,10 +271,7 @@ describe('tabs runtime message flow', () => {
             type: 'command:extract_group',
             payload: { group: 'Research' },
         })
-        expect(runtimeSendMessageSpy).toHaveBeenCalledWith({
-            type: 'query:get_tabs_snapshot',
-            payload: {},
-        })
+        expect(runtimeSendMessageSpy).toHaveBeenCalledWith(snapshotRequestMatcher)
         expect(preventDefault).toHaveBeenCalled()
     })
 
@@ -313,12 +297,12 @@ describe('tabs runtime message flow', () => {
 
         expect(runtimeSendMessageSpy).toHaveBeenCalledWith({
             type: 'command:close_group',
-            payload: { groupName: 'Work' },
+            payload: {
+                groupName: 'Work',
+                activeFilters: expect.any(Object),
+            },
         })
-        expect(runtimeSendMessageSpy).toHaveBeenCalledWith({
-            type: 'query:get_tabs_snapshot',
-            payload: {},
-        })
+        expect(runtimeSendMessageSpy).toHaveBeenCalledWith(snapshotRequestMatcher)
         expect(preventDefault).toHaveBeenCalled()
     })
 
@@ -344,10 +328,7 @@ describe('tabs runtime message flow', () => {
             type: 'command:toggle_lock',
             payload: { url: 'https://example.com' },
         })
-        expect(runtimeSendMessageSpy).toHaveBeenCalledWith({
-            type: 'query:get_tabs_snapshot',
-            payload: {},
-        })
+        expect(runtimeSendMessageSpy).toHaveBeenCalledWith(snapshotRequestMatcher)
         expect(preventDefault).toHaveBeenCalled()
     })
 
@@ -378,10 +359,7 @@ describe('tabs runtime message flow', () => {
             type: 'command:move_domain',
             payload: { domain: 'example.com', newGroup: 'Work' },
         })
-        expect(runtimeSendMessageSpy).toHaveBeenCalledWith({
-            type: 'query:get_tabs_snapshot',
-            payload: {},
-        })
+        expect(runtimeSendMessageSpy).toHaveBeenCalledWith(snapshotRequestMatcher)
         expect(stopPropagation).toHaveBeenCalled()
     })
 })
