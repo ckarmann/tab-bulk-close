@@ -1,4 +1,5 @@
-import StateService from '/js/state_service.js'
+import { enrichTabs } from '/js/domain/tab_enrichment.js'
+import { applyGrouping } from '/js/domain/tab_grouping.js'
 
 // from https://sashamaps.net/docs/resources/20-colors/
 // (Accessibility:99%)
@@ -18,14 +19,18 @@ function attributeWindowColor(windowId) {
     return newColor;
 }
 
-export default function buildTabsViewModel(tabs, state, activeFilters = {}) {
-    StateService.enrichTabs(tabs, state, activeFilters);
+export default function buildTabsViewModel(tabs, stateData, activeFilters = {}) {
+    const lockedUrls = stateData?.lockedUrls || []
+    const groups = stateData?.groups || ['Others']
+    const mapping = stateData?.mapping || {}
 
-    const [groups, groupMap, domainMap] = state.applyGrouping(tabs);
+    enrichTabs(tabs, url => lockedUrls.includes(url), activeFilters);
+
+    const [resolvedGroups, groupMap, domainMap] = applyGrouping(tabs, groups, mapping);
     const groupObjectList = [];
     const windowIdMap = new Map();
 
-    for (let group of groups) {
+    for (let group of resolvedGroups) {
         const domains = groupMap[group] === undefined ? [] : Object.values(groupMap[group]);
         let tabCount = 0;
         let closableCount = 0;
@@ -43,7 +48,7 @@ export default function buildTabsViewModel(tabs, state, activeFilters = {}) {
                 tabCount++;
                 if (tab.filtered) {
                     domainObject.filteredCount++;
-                    if (!(tab.pinned || state.isLocked(tab.url))) {
+                    if (!(tab.pinned || lockedUrls.includes(tab.url))) {
                         closableCount++;
                     }
                 }
