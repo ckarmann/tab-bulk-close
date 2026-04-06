@@ -16,7 +16,6 @@ vi.mock('/js/ui/renderers/tabs_renderer.js', () => ({
     default: (...args) => renderTabsViewSpy(...args),
 }))
 
-vi.mock('/js/state_service.js', () => ({ default: {} }))
 vi.mock('/js/tabs_service.js', () => ({
     default: {
         getAllTabs: vi.fn().mockResolvedValue([]),

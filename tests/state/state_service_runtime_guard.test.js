@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.unmock('/js/state_service.js')
+vi.unmock('/js/domain/tab_enrichment.js')
 
 vi.mock('/js/filters.js', () => ({
     default: {
@@ -8,14 +8,14 @@ vi.mock('/js/filters.js', () => ({
     },
 }))
 
-async function loadStateServiceWithGlobals() {
+async function loadTabEnrichmentWithGlobals() {
     vi.resetModules()
 
-    const module = await import('/js/state_service.js')
-    return module.default
+    const tabEnrichmentModule = await import('/js/domain/tab_enrichment.js')
+    return tabEnrichmentModule.enrichTabs
 }
 
-describe('state_service runtime guard', () => {
+describe('tab_enrichment runtime guard', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         delete globalThis.dayjs
@@ -23,11 +23,10 @@ describe('state_service runtime guard', () => {
     })
 
     it('initializes dayjs globals and enriches tabs', async () => {
-        const stateService = await loadStateServiceWithGlobals()
+        const enrichTabs = await loadTabEnrichmentWithGlobals()
         expect(typeof globalThis.dayjs).toBe('function')
         expect(typeof globalThis.dayjs_plugin_relativeTime).toBe('function')
 
-        const state = new stateService.State(['Others'], {}, [])
         const tabs = [
             {
                 id: 1,
@@ -36,15 +35,14 @@ describe('state_service runtime guard', () => {
             },
         ]
 
-        expect(() => stateService.enrichTabs(tabs, state)).not.toThrow()
+        expect(() => enrichTabs(tabs, () => false)).not.toThrow()
         expect(tabs[0].lastAccessedFriendly).toBeTypeOf('string')
         expect(tabs[0].lastAccessedString).toBeTypeOf('string')
         expect(tabs[0].dayFilter).toBe('today')
     })
 
     it('uses tab.timeValue when present', async () => {
-        const stateService = await loadStateServiceWithGlobals()
-        const state = new stateService.State(['Others'], {}, [])
+        const enrichTabs = await loadTabEnrichmentWithGlobals()
         const tabs = [
             {
                 id: 2,
@@ -54,7 +52,7 @@ describe('state_service runtime guard', () => {
             },
         ]
 
-        stateService.enrichTabs(tabs, state)
+        enrichTabs(tabs, () => false)
 
         expect(tabs[0].lastAccessedColor).toBe('black')
         expect(tabs[0].lastAccessedFriendly).toBeTypeOf('string')

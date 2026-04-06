@@ -251,11 +251,12 @@ Contract notes:
 
 ## Suggested file mapping from current code
 
-- Current `js/state_service.js`
+- Legacy `js/state_service.js` (removed)
   - Split into:
     - `js/infra/repositories/state_repository.js`
     - `js/domain/tab_grouping.js`
-    - `js/domain/tab_metadata.js`
+    - `js/domain/tab_enrichment.js`
+    - `js/domain/tab_duplicates.js`
 - Current `js/tabs_service.js`
   - Split into:
     - `js/infra/repositories/tab_state_repository.js`
