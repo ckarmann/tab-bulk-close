@@ -1,15 +1,15 @@
-import StateService from '/js/state_service.js'
+import stateRepository from '/js/infra/repositories/state_repository.js'
 
 export default async function ungroupCommand({
     groupName,
-    stateService = StateService,
+    stateRepository: repository = stateRepository,
     onChanged,
 } = {}) {
     if (!groupName) {
         return { ok: false, reason: 'empty-group-name' };
     }
 
-    const removed = await stateService.removeGroupAndSave(groupName);
+    const removed = await repository.removeGroup(groupName);
 
     if (removed && typeof onChanged === 'function') {
         onChanged();

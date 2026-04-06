@@ -1,8 +1,8 @@
-import StateService from '/js/state_service.js'
+import stateRepository from '/js/infra/repositories/state_repository.js'
 
 export default async function addGroupCommand({
 	newGroupName,
-	stateService = StateService,
+	stateRepository: repository = stateRepository,
 	onChanged,
 } = {}) {
 	const groupName = typeof newGroupName === 'string' ? newGroupName.trim() : '';
@@ -11,7 +11,7 @@ export default async function addGroupCommand({
 		return { ok: false, reason: 'empty-group-name' };
 	}
 
-	await stateService.addGroupAndSave(groupName);
+	await repository.addGroup(groupName);
 
 	if (typeof onChanged === 'function') {
 		onChanged();

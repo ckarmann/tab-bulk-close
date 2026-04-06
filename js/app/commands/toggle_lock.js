@@ -1,15 +1,15 @@
-import StateService from '/js/state_service.js'
+import stateRepository from '/js/infra/repositories/state_repository.js'
 
 export default async function toggleLockCommand({
     url,
-    stateService = StateService,
+    stateRepository: repository = stateRepository,
     onChanged,
 } = {}) {
     if (!url) {
         return { ok: false, reason: 'empty-url' };
     }
 
-    await stateService.toggleLock(url);
+    await repository.toggleLock(url);
 
     if (typeof onChanged === 'function') {
         onChanged();

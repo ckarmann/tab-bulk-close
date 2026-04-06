@@ -1,12 +1,13 @@
-import StateService from '/js/state_service.js'
+import stateRepository from '/js/infra/repositories/state_repository.js'
 import TabsService from '/js/tabs_service.js'
 import TabsGateway from '/js/infra/browser/tabs_gateway.js'
 import WindowsGateway from '/js/infra/browser/windows_gateway.js'
+import { applyGrouping } from '/js/domain/tab_grouping.js'
 
 // Command to extract all tabs of a group into a new window
 export default async function extractGroupCommand({
     group,
-    stateService = StateService,
+    stateRepository: repository = stateRepository,
     tabsService = TabsService,
     windowsGateway = WindowsGateway,
     tabsGateway = TabsGateway,
@@ -16,10 +17,10 @@ export default async function extractGroupCommand({
         return { ok: false, reason: 'empty-group' };
     }
 
-    const state = await stateService.loadState();
+    const stateData = await repository.loadState();
     const tabs = await tabsService.getAllTabs();
 
-    const [_, groupMap, domainMap] = state.applyGrouping(tabs);
+    const [_, groupMap, domainMap] = applyGrouping(tabs, stateData.groups, stateData.mapping);
     const domains = groupMap[group];
 
     if (!domains || domains.length === 0) {
