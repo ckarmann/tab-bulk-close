@@ -16,11 +16,13 @@ export default defineConfig({
             reporter: ['text', 'html', 'lcov'],
             reportsDirectory: 'coverage',
             include: [
+                'js/*.js',
                 'js/app/**/*.js',
+                'js/domain/*.js',
+                'js/infra/**/*.js',
+                'js/shared/*.js',
+                'js/ui/**/*.js',
                 'tabs/**/*.js',
-                'js/ui/presenters/**/*.js',
-                'js/ui/renderers/**/*.js',
-                'js/*.js'
             ],
         },
     },
