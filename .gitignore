@@ -1,7 +1,8 @@
-manifest.json
 .vscode/
 node_modules/
 dist/
+.output/
+.wxt/
 *.log
 *.tmp
 coverage/

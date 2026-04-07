@@ -1,0 +1,61 @@
+{{#groups}}
+<div class="group-box drop-target" data-group="{{id}}">
+    <div class="groupHeader">
+        <h2 class="group-title">
+            {{name}} ({{info}})
+        </h2>
+        <button class="extract-group">Extract</button>
+        {{#isOthers}}<button class="ungroup-group" disabled>Ungroup</button>{{/isOthers}}
+        {{^isOthers}}<button class="ungroup-group">Ungroup</button>{{/isOthers}}
+        <button class="close-group">Close</button>
+    </div>
+    {{#subgroups}}
+    <table class="group-list">
+        <col width="20px"/>
+        <col width="100%"/>
+        <col width="100px"/>
+        <col width="100px"/>
+        <col width="100px"/>
+        <tbody class="domainList" draggable="true" data-domain="{{id}}">
+            <tr class="domainRow">
+                <td colspan="5">
+                    {{name}}
+                </td>
+            </tr>
+            {{#items}}
+            <tr class="tabList">
+                <td class="lockCell">
+                {{#pinned}}
+                <span class="lock locked locked-pinned" data-url="{{url}}">&#x1F512;&#xFE0E;</span>
+                {{/pinned}}
+                {{^pinned}}
+                {{#locked}}
+                <span class="lock locked" data-url="{{url}}">&#x1F512;&#xFE0E;</span>
+                {{/locked}}
+                {{^locked}}
+                <span class="lock unlocked" data-url="{{url}}">&#x1F513;&#xFE0E;</span>
+                {{/locked}}
+                {{/pinned}}
+                </td>
+                <td>
+                <a href="{{url}}" class="switch-tabs" draggable="false" data-tab-id="{{id}}">{{title}}</a>
+                </td>
+                <td>
+                {{#duplicate}}
+                <span class="duplicate-tab">duplicate</span>
+                {{/duplicate}}
+                </td>
+                <td>
+                    <span class="windowIcon" style="background-color:{{windowColor}}" ></span>
+                    <button class="close-tab advanced" data-tab-id="{{id}}">Close</button>
+                </td>
+                <td>
+                <span class="date access-date" style="color:{{lastAccessedColor}}" title="{{lastAccessedString}}">{{lastAccessedFriendly}}</span>
+                </td>
+            </tr>
+            {{/items}}
+        </tbody>
+    </table>
+    {{/subgroups}}
+</div>
+{{/groups}}

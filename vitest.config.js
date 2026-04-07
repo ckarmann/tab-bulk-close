@@ -10,19 +10,17 @@ export default defineConfig({
     test: {
         environment: 'node',
         setupFiles: ['tests/setup/vitest.setup.js'],
-        include: ['tests/**/*.test.js'],
+        include: ['tests/**/*.test.ts'],
         coverage: {
             provider: 'v8',
             reporter: ['text', 'html', 'lcov'],
             reportsDirectory: 'coverage',
             include: [
-                'js/*.js',
-                'js/app/**/*.js',
-                'js/domain/*.js',
-                'js/infra/**/*.js',
-                'js/shared/*.js',
-                'js/ui/**/*.js',
-                'tabs/**/*.js',
+                'js/**/*.{js,ts}',
+                'tabs/**/*.{js,ts}',
+            ],
+            exclude: [
+                'js/shared/contracts.{js,ts}',
             ],
         },
     },

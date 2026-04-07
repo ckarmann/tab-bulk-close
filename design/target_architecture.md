@@ -12,11 +12,7 @@
 
 ```text
 .
-|-- manifest.json
-|-- chrome/
-|   `-- manifest.json
-|-- firefox/
-|   `-- manifest.json
+|-- wxt.config.ts               # single manifest source of truth
 |-- css/
 |   `-- normalize.css
 |-- icons/
@@ -26,7 +22,7 @@
 |-- tabs/
 |   |-- tabs.html
 |   |-- tabs.css
-|   `-- tabs.js                    # UI entrypoint only
+|   `-- tabs.ts                    # UI entrypoint only
 |-- third_party/
 |   |-- dayjs/
 |   |   |-- dayjs.js
@@ -38,7 +34,7 @@
 |   |   `-- browser-polyfill.js
 |   `-- THIRD_PARTY.md             # source/version/license/checksum for vendored libs
 `-- js/
-    |-- background.js              # background entrypoint only
+  |-- background.ts              # background entrypoint only
     |-- app/
     |   |-- commands/
     |   |   |-- add_group.js
@@ -107,12 +103,12 @@ Recommended import strategy:
 
 ### 1) Entrypoints
 
-- `js/background.js`
+- `js/background.ts`
   - Boot background runtime.
   - Register browser event listeners.
   - Forward events into app commands.
   - Serve query/command messages from UI.
-- `tabs/tabs.js`
+- `tabs/tabs.ts`
   - Boot page controllers.
   - Request initial snapshot.
   - Subscribe to state updates.
@@ -257,7 +253,7 @@ Contract notes:
     - `js/domain/tab_grouping.js`
     - `js/domain/tab_enrichment.js`
     - `js/domain/tab_duplicates.js`
-- Current `js/tabs_service.js`
+- Current `js/tabs_service.ts`
   - Split into:
     - `js/infra/repositories/tab_state_repository.js`
     - `js/infra/browser/tabs_gateway.js`
@@ -266,7 +262,7 @@ Contract notes:
   - Extraction completed into:
     - `js/ui/presenters/tabs_presenter.js`
     - `js/ui/renderers/tabs_renderer.js`
-- Current `tabs/tabs.js`
+- Current `tabs/tabs.ts`
   - Keep as entrypoint and move logic into:
     - `js/ui/controllers/tabs_page_controller.js`
     - `js/ui/controllers/drag_drop_controller.js`
@@ -305,34 +301,26 @@ Contract notes:
 
 ### Phase 5: Normalize manifests and packaging
 
-- Keep browser-specific manifests.
-- Add a small build/copy script to generate effective root manifest from source templates.
+- This phase is superseded by the immediate WXT migration decision.
+- Manifest management is now handled by WXT configuration as the single source of truth.
+- Browser-specific manifest differences are declared in WXT target overrides and generated into separate build outputs.
 
-### Phase 6: Introduce WXT (optional but recommended long-term)
+### Phase 6: Introduce WXT + TypeScript (active plan)
 
-- Add WXT as the packaging/build layer after architecture boundaries are stable.
-- Keep the same domain/app/ui/infra module boundaries; only change build and manifest orchestration.
-- Start with a no-behavior-change migration:
-  - produce equivalent background and tabs page entrypoints
-  - keep existing HTML/CSS templates
-  - keep vendored dependencies in `third_party/`
-- Move browser-specific manifest differences into WXT config/env handling.
-- Add release scripts for browser-specific artifacts (Chrome zip, Firefox zip/xpi).
+- Execute an immediate migration to WXT for build/dev/package orchestration and TypeScript for source code.
+- Preserve existing domain/app/ui/infra boundaries; change tooling and typing, not business behavior.
+- Use WXT config as the manifest source of truth, with browser-specific overrides per target.
+- Keep dual-browser outputs (`dist/chrome` and `dist/firefox`) so both can be tested concurrently.
+- Keep migration incremental and behavior-preserving, validated by tests and browser smoke checks.
 
-Suggested WXT adoption steps:
+Detailed implementation plan:
 
-1. Initialize WXT in a migration branch and configure equivalent entrypoints.
-2. Verify generated manifests match current permission and background behavior.
-3. Point UI script references to the same modules used today.
-4. Add CI task to build both browser targets.
-5. Remove manual manifest copy workflow from README once builds are verified.
+See `design/phase_6_wxt_migration.md` for milestones, acceptance criteria, workflow, risk handling, and PR breakdown.
 
-WXT adoption criteria (when to switch):
+Note on manifest filenames:
 
-- You maintain multiple extension pages or content scripts.
-- Manual manifest sync starts causing drift.
-- You need consistent release packaging and automated checks.
-- You want typed config and cleaner dev/prod build workflows.
+- Browser runtimes require the manifest filename to be exactly `manifest.json`.
+- Concurrent Chrome + Firefox testing is achieved via separate output directories, not custom manifest filenames.
 
 ## Testing strategy after migration
 
@@ -354,7 +342,7 @@ WXT adoption criteria (when to switch):
 - Preserve current templates and styling until architecture split is complete.
 - Prefer message contracts over importing background internals into tabs page code.
 - Keep third-party code visible, but isolated in `third_party/`.
-- Adopt WXT only after Phase 1-4 boundaries are in place, to avoid mixing architecture refactor with toolchain migration.
+- WXT + TypeScript migration is now an active phase and should follow `design/phase_6_wxt_migration.md`.
 
 ## Definition of done for the refactor
 
