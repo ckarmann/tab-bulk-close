@@ -1,7 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('/third_party/webextension-polyfill/browser-polyfill.js', () => ({}))
-
 const {
     tabsGetSpy,
     tabsQuerySpy,
@@ -30,7 +28,7 @@ async function loadBackgroundAndCaptureListeners() {
 
     globalThis.browser = {
         runtime: {
-            getURL: vi.fn(() => 'moz-extension://id/tabs/tabs.html'),
+            getURL: vi.fn(() => 'moz-extension://id/tabs.html'),
             sendMessage: (...args) => runtimeSendMessageSpy(...args),
             onMessage: {
                 addListener: vi.fn(),

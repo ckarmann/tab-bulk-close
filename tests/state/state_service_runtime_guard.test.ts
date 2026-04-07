@@ -2,12 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.unmock('/js/domain/tab_enrichment.ts')
 
-vi.mock('/js/filters.js', () => ({
-    default: {
-        filter: vi.fn(() => true),
-    },
-}))
-
 async function loadTabEnrichmentWithGlobals() {
     vi.resetModules()
 
@@ -18,14 +12,10 @@ async function loadTabEnrichmentWithGlobals() {
 describe('tab_enrichment runtime guard', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        delete globalThis.dayjs
-        delete globalThis.dayjs_plugin_relativeTime
     })
 
-    it('initializes dayjs globals and enriches tabs', async () => {
+    it('initializes dayjs runtime and enriches tabs', async () => {
         const enrichTabs = await loadTabEnrichmentWithGlobals()
-        expect(typeof globalThis.dayjs).toBe('function')
-        expect(typeof globalThis.dayjs_plugin_relativeTime).toBe('function')
 
         const tabs = [
             {

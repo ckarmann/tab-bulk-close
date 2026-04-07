@@ -23,16 +23,8 @@
 |   |-- tabs.html
 |   |-- tabs.css
 |   `-- tabs.ts                    # UI entrypoint only
-|-- third_party/
-|   |-- dayjs/
-|   |   |-- dayjs.js
-|   |   `-- plugin/
-|   |       `-- relativeTime.js
-|   |-- mustache/
-|   |   `-- mustache.js
-|   |-- webextension-polyfill/
-|   |   `-- browser-polyfill.js
-|   `-- THIRD_PARTY.md             # source/version/license/checksum for vendored libs
+|-- package.json
+|-- package-lock.json
 `-- js/
   |-- background.ts              # background entrypoint only
     |-- app/
@@ -83,21 +75,15 @@
 
 ## Third-party dependency policy
 
-- Keep third-party libraries committed in the repository for inspectability.
-- Isolate all third-party source under `third_party/`.
-- Keep application code under `js/` and `tabs/`; do not mix app modules with vendored source.
-- Track each vendored dependency in `third_party/THIRD_PARTY.md` with:
-  - upstream URL
-  - exact version
-  - license type
-  - date imported
-  - optional checksum/signature
+- Manage runtime libraries via npm in `package.json`.
+- Keep application code under `js/` and `tabs/`; do not commit copied vendor source.
+- Pin versions through `package-lock.json` and update intentionally.
 
 Recommended import strategy:
 
-- Use explicit paths from `tabs/tabs.html` to `third_party/...` scripts.
-- If you later adopt ESM wrappers, keep wrappers in `js/vendor/` and leave upstream files untouched.
-- Avoid editing vendored files directly; patch with wrapper code or document local patch diffs in `THIRD_PARTY.md`.
+- Use ESM imports directly from npm packages in TypeScript modules.
+- Keep browser API bootstrap in a dedicated runtime wrapper module.
+- Keep compatibility shims small and local (`js/shared`).
 
 ## Responsibilities by layer
 
@@ -341,7 +327,7 @@ Note on manifest filenames:
 - Keep `tabregistry` code as inspiration only; do not include it in runtime paths.
 - Preserve current templates and styling until architecture split is complete.
 - Prefer message contracts over importing background internals into tabs page code.
-- Keep third-party code visible, but isolated in `third_party/`.
+- Keep third-party versions explicit through `package.json` and `package-lock.json`.
 - WXT + TypeScript migration is now an active phase and should follow `design/phase_6_wxt_migration.md`.
 
 ## Definition of done for the refactor

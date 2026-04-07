@@ -1,4 +1,3 @@
-import '../third_party/webextension-polyfill/browser-polyfill.js'
 import { notifyStateChanged } from './shared/background_notify.ts'
 import routeMessage from './app/message_router.ts'
 
@@ -9,16 +8,17 @@ async function markTabAccessTime(tab: { id?: number }): Promise<void> {
 }
 
 let lastFocusedWindow = -1
+const TABS_PAGE_PATH = 'tabs.html'
 
 function openTab(): void {
-    const page_url = browser.runtime.getURL("tabs/tabs.html" as any)
+    const page_url = browser.runtime.getURL(TABS_PAGE_PATH as any)
     browser.tabs.query({ url: page_url }).then((tabs) => {
         if (tabs.length > 0) {
             const tab = tabs[0]
             browser.windows.update(tab.windowId!, { focused: true })
             browser.tabs.update(tab.id!, { active: true })
         } else {
-            browser.tabs.create({ url: "tabs/tabs.html" })
+            browser.tabs.create({ url: TABS_PAGE_PATH })
         }
     })
 }

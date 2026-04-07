@@ -84,6 +84,6 @@ Then load the extension from `.output/chrome-mv3/` or `.output/firefox-mv3/` as 
 
 ## Third-party libraries
 
-- Vendored third-party files are stored in `third_party/`.
-- A source/license inventory is maintained in `third_party/THIRD_PARTY.md`.
+- Runtime libraries are managed via npm dependencies in `package.json`.
+- Version pinning is enforced by `package-lock.json`.
 

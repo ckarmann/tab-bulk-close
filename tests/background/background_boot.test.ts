@@ -1,17 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('/third_party/webextension-polyfill/browser-polyfill.js', () => ({}))
-
 describe('background boot runtime safety', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         vi.resetModules()
-        delete globalThis.dayjs
-        delete globalThis.dayjs_plugin_relativeTime
 
         globalThis.browser = {
             runtime: {
-                getURL: vi.fn(() => 'moz-extension://id/tabs/tabs.html'),
+                getURL: vi.fn(() => 'moz-extension://id/tabs.html'),
                 sendMessage: vi.fn().mockResolvedValue(undefined),
                 onMessage: { addListener: vi.fn() },
             },

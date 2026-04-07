@@ -1,4 +1,4 @@
-import { getDayjs } from '../../third_party/dayjs/runtime.js'
+import { getDayjs } from '../shared/dayjs_runtime'
 import { matchesActiveFilters } from '../shared/filter_state'
 import { findDuplicateTabs } from './tab_duplicates'
 import type { ActiveFilters } from '../shared/contracts'
