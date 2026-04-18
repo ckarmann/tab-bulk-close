@@ -1,339 +1,275 @@
-# Target architecture for tabcloser
-
-## Goals
-
-- Keep browser-specific details behind adapter interfaces.
-- Keep business use cases independent from UI and browser APIs.
-- Keep UI code mostly focused on rendering and interaction dispatch.
-- Make cross-browser behavior explicit and testable.
-- Support incremental migration without a full rewrite.
-
-## Proposed folder layout
-
-```text
-.
-|-- wxt.config.ts               # single manifest source of truth
-|-- css/
-|   `-- normalize.css
-|-- icons/
-|-- design/
-|   |-- tab_access_date.md
-|   `-- target_architecture.md
-|-- tabs/
-|   |-- tabs.html
-|   |-- tabs.css
-|   `-- tabs.ts                    # UI entrypoint only
-|-- package.json
-|-- package-lock.json
-`-- js/
-  |-- background.ts              # background entrypoint only
-    |-- app/
-    |   |-- commands/
-    |   |   |-- add_group.js
-    |   |   |-- close_group.js
-    |   |   |-- extract_group.js
-    |   |   |-- move_domain.js
-    |   |   |-- toggle_lock.js
-    |   |   `-- ungroup.js
-    |   |-- queries/
-    |   |   `-- get_tabs_snapshot.js
-    |   `-- message_router.js      # maps UI/background messages to app handlers
-    |-- domain/
-    |   |-- tab_grouping.js        # apply grouping and group/domain calculations
-    |   |-- tab_filters.js         # pure filter predicates
-    |   |-- tab_metadata.js        # duplicate detection and day bucket logic
-    |   `-- types.js               # JSDoc typedefs for shared structures
-    |-- infra/
-    |   |-- browser/
-    |   |   |-- tabs_gateway.js
-    |   |   |-- windows_gateway.js
-    |   |   |-- storage_gateway.js
-    |   |   `-- sessions_gateway.js
-    |   |-- repositories/
-    |   |   |-- state_repository.js
-    |   |   `-- tab_state_repository.js
-    |   `-- mappers/
-    |       `-- tab_mapper.js
-    |-- ui/
-    |   |-- controllers/
-    |   |   |-- tabs_page_controller.js
-    |   |   |-- drag_drop_controller.js
-    |   |   `-- keyboard_controller.js
-    |   |-- presenters/
-    |   |   `-- tabs_presenter.js
-    |   |-- renderers/
-    |   |   `-- tabs_renderer.js
-    |   `-- filters/
-    |       `-- filters_controller.js
-    |-- shared/
-    |   |-- events.js              # small event bus helpers
-    |   |-- logger.js
-    |   `-- constants.js
-    `-- vendor/
-        `-- vendor_loader.js       # optional helper for loading/centralizing vendor globals
-```
-
-## Third-party dependency policy
-
-- Manage runtime libraries via npm in `package.json`.
-- Keep application code under `js/` and `tabs/`; do not commit copied vendor source.
-- Pin versions through `package-lock.json` and update intentionally.
-
-Recommended import strategy:
-
-- Use ESM imports directly from npm packages in TypeScript modules.
-- Keep browser API bootstrap in a dedicated runtime wrapper module.
-- Keep compatibility shims small and local (`js/shared`).
-
-## Responsibilities by layer
-
-### 1) Entrypoints
-
-- `js/background.ts`
-  - Boot background runtime.
-  - Register browser event listeners.
-  - Forward events into app commands.
-  - Serve query/command messages from UI.
-- `tabs/tabs.ts`
-  - Boot page controllers.
-  - Request initial snapshot.
-  - Subscribe to state updates.
-  - No business logic.
+# Tabcloser Architecture
+
+## Purpose
+
+Tabcloser is a browser extension that helps users organize and bulk-close tabs by group, domain, lock state, duplicate status, date bucket, and window.
+
+The architecture is organized into clear layers so UI behavior, business logic, and browser integration stay separate and testable.
+
+## High-Level Runtime Model
+
+The extension has two runtimes:
+
+1. Background runtime
+2. Tabs page runtime
+
+The background runtime owns browser lifecycle events and command/query handling.
+The tabs page runtime owns rendering and user interaction.
+
+Both runtimes communicate through runtime messages with typed contracts defined in `js/shared/contracts.ts`.
+
+## Source Layout
+
+Current structure:
+
+- Build and entrypoints:
+  - `wxt.config.ts`
+  - `entrypoints/background.ts`
+  - `entrypoints/tabs/index.html`
+  - `entrypoints/tabs/main.ts`
+- Background runtime:
+  - `js/background.ts`
+- App layer:
+  - `js/app/message_router.ts`
+  - `js/app/commands/add_group.ts`
+  - `js/app/commands/ungroup.ts`
+  - `js/app/commands/move_domain.ts`
+  - `js/app/commands/toggle_lock.ts`
+  - `js/app/commands/close_group.ts`
+  - `js/app/commands/extract_group.ts`
+  - `js/app/queries/get_tabs_snapshot.ts`
+- Domain layer:
+  - `js/domain/tab_grouping.ts`
+  - `js/domain/tab_enrichment.ts`
+  - `js/domain/tab_duplicates.ts`
+- Infrastructure layer:
+  - `js/infra/repositories/state_repository.ts`
+  - `js/infra/browser/tabs_gateway.ts`
+  - `js/infra/browser/windows_gateway.ts`
+  - `js/tabs_service.ts`
+- UI layer:
+  - `tabs/tabs.ts`
+  - `css/tabs.css`
+  - `js/ui/controllers/tabs_page_controller.ts`
+  - `js/ui/controllers/drag_drop_controller.ts`
+  - `js/ui/controllers/keyboard_controller.ts`
+  - `js/ui/presenters/tabs_presenter.ts`
+  - `js/ui/renderers/tabs_renderer.ts`
+  - `js/ui/templates/group-template.mustache`
+  - `js/ui/templates/group-shortcut-template.mustache`
+  - `js/ui/templates/window-filter-template.mustache`
+- Shared utilities and contracts:
+  - `js/shared/contracts.ts`
+  - `js/shared/background_notify.ts`
+  - `js/shared/browser_polyfill.ts`
+  - `js/shared/dayjs_runtime.ts`
+  - `js/shared/filter_state.ts`
+  - `js/filters.ts`
+
+## Layer Responsibilities
+
+### Entrypoints
+
+- `entrypoints/background.ts` boots polyfills and background runtime.
+- `entrypoints/tabs/main.ts` boots styles, polyfills, and tabs UI runtime.
+- `tabs/tabs.ts` is the tabs page wiring entrypoint and delegates to controllers.
+
+### Background Layer
+
+- `js/background.ts` registers:
+  - browser action click handler
+  - runtime message listener for command:* and query:* messages
+  - tab and window lifecycle listeners
+- Lifecycle listeners emit state_changed invalidation events through `js/shared/background_notify.ts`.
+
+### App Layer
+
+- `js/app/message_router.ts` validates incoming request envelopes and dispatches handlers.
+- Command handlers implement use cases:
+  - add/ungroup/move/toggle lock/close/extract
+- Query handler builds snapshot responses:
+  - `js/app/queries/get_tabs_snapshot.ts`
+
+### Domain Layer
+
+Pure logic modules without DOM access:
+
+- `js/domain/tab_grouping.ts`: grouping rules and mapping cleanup
+- `js/domain/tab_enrichment.ts`: computed tab fields
+- `js/domain/tab_duplicates.ts`: duplicate detection helpers
+
+### Infrastructure Layer
+
+Browser and persistence adapters:
 
-### 2) App layer (use cases)
-
-- Located in `js/app/commands` and `js/app/queries`.
-- Orchestrates domain + repositories + gateways.
-- No DOM access.
-- No direct template rendering.
-
-Examples:
-- `close_group.js` decides which tabs are closable, then asks gateway to remove tabs.
-- `get_tabs_snapshot.js` gathers tabs, state, filter state, and builds a DTO for presenter.
-
-### 3) Domain layer (pure logic)
-
-- Located in `js/domain`.
-- No browser API calls.
-- No storage access.
-- No UI references.
-
-Examples:
-- Grouping calculations.
-- Duplicate detection.
-- Date bucket assignment (`today`, `yesterday`, etc.).
-- Lock and closable rules.
-
-### 4) Infra layer
-
-- Located in `js/infra`.
-- Encapsulates browser API differences and persistence details.
-
-Repositories:
-- `state_repository.js` for groups/mapping/locked URLs.
-- `tab_state_repository.js` for per-tab metadata (`lastUpdatedOrAccessed`) with fallback strategy.
-
-Gateways:
-- One file per browser API surface (`tabs`, `windows`, `storage`, `sessions`).
-
-### 5) UI layer
-
-- Located in `js/ui`.
-- Controllers translate user events into app commands.
-- Presenter maps DTOs to a render-friendly view model.
-- Renderer performs Mustache rendering and targeted DOM patching.
-
-## Dependency rules
-
-- `ui -> app`
-- `app -> domain, infra, shared`
-- `infra -> shared`
-- `domain -> shared` (optional)
-- `background entrypoint -> app + infra gateways`
-- `tabs entrypoint -> ui + app(query client)`
-
-Forbidden dependencies:
-- `domain -> browser API`
-- `domain -> DOM`
-- `renderer -> browser API`
-- `controller -> repository`
-
-## Runtime data flow
-
-### Background-driven state updates
-
-1. Browser tab/window event fires in background.
-2. Background calls app command.
-3. Command updates repositories as needed.
-4. Background emits `state_changed` message with a lightweight payload (or invalidation token).
-5. Tabs page fetches fresh snapshot via query and rerenders.
-
-### UI-driven commands
-
-1. User action in tabs page controller.
-2. Controller sends command message (for example, `close_group`).
-3. Background executes command and persists changes.
-4. Background emits `state_changed`.
-5. UI requests query snapshot and rerenders.
-
-### Message contract (Phase 3)
-
-Use `browser.runtime.sendMessage` for UI/background communication.
-
-UI -> background message envelope:
-
-```json
-{
-  "type": "command:add_group | command:ungroup | command:move_domain | command:toggle_lock | command:close_group | command:extract_group | query:get_tabs_snapshot",
-  "payload": {},
-  "requestId": "optional-string"
-}
-```
-
-Background -> UI event envelope:
-
-```json
-{
-  "type": "state_changed",
-  "payload": {
-    "source": "background",
-    "reason": "tab_created | tab_removed | tab_updated | tab_activated | window_focus_changed | command:add_group | command:ungroup | command:move_domain | command:toggle_lock | command:close_group | command:extract_group",
-    "timestamp": 0,
-    "changedTabIds": []
-  }
-}
-```
-
-Background direct response for request/response calls:
-
-```json
-{
-  "ok": true,
-  "requestId": "optional-string",
-  "result": {}
-}
-```
-
-```json
-{
-  "ok": false,
-  "requestId": "optional-string",
-  "error": {
-    "code": "invalid_message | unknown_type | execution_failed",
-    "message": "human-readable"
-  }
-}
-```
-
-Contract notes:
-
-- `state_changed` is an invalidation event; UI should fetch fresh snapshot via `query:get_tabs_snapshot`.
-- `requestId` is optional but recommended for tracing/debug logs.
-- `changedTabIds` is optional and can remain empty until incremental refresh is implemented.
-
-## Suggested file mapping from current code
-
-- Legacy `js/state_service.js` (removed)
-  - Split into:
-    - `js/infra/repositories/state_repository.js`
-    - `js/domain/tab_grouping.js`
-    - `js/domain/tab_enrichment.js`
-    - `js/domain/tab_duplicates.js`
-- Current `js/tabs_service.ts`
-  - Split into:
-    - `js/infra/repositories/tab_state_repository.js`
-    - `js/infra/browser/tabs_gateway.js`
-    - `js/infra/browser/sessions_gateway.js`
-- Legacy `tabs/tabs_view.js`
-  - Extraction completed into:
-    - `js/ui/presenters/tabs_presenter.js`
-    - `js/ui/renderers/tabs_renderer.js`
-- Current `tabs/tabs.ts`
-  - Keep as entrypoint and move logic into:
-    - `js/ui/controllers/tabs_page_controller.js`
-    - `js/ui/controllers/drag_drop_controller.js`
-    - `js/ui/controllers/keyboard_controller.js`
-    - `js/app/commands/*`
-
-## Incremental migration plan
-
-### Phase 1: Extract app commands (low risk)
-
-- Create `js/app/commands` files for each user action.
-- Keep existing call sites but route logic through command modules.
-- Keep behavior unchanged.
-
-### Phase 2: Separate presenter from renderer
-
-- Move data shaping from current view module into `tabs_presenter.js`.
-- Keep Mustache templates and rendering strategy unchanged.
-
-### Phase 2.5: Introduce browser gateways
-
-- Create concrete `tabs_gateway.js` and `windows_gateway.js` modules as soon as commands need browser APIs.
-- Replace inline `browser.tabs` and `browser.windows` wrapper objects in commands with imports from `js/infra/browser/`.
-- Keep `storage_gateway.js` and `sessions_gateway.js` for the later repository split, when that value becomes immediate.
-- Benefit: commands become easier to test and the future background migration has a clear API boundary.
-
-### Phase 3: Move browser lifecycle listeners to background
-
-- Move tab/window event listeners from tabs page runtime into background runtime.
-- Introduce simple message channel for UI refresh.
-
-### Phase 4: Split repositories from domain logic
-
-- Extract pure functions to `js/domain`.
-- Keep repository modules focused on persistence and browser APIs.
-
-### Phase 5: Normalize manifests and packaging
-
-- This phase is superseded by the immediate WXT migration decision.
-- Manifest management is now handled by WXT configuration as the single source of truth.
-- Browser-specific manifest differences are declared in WXT target overrides and generated into separate build outputs.
-
-### Phase 6: Introduce WXT + TypeScript (active plan)
-
-- Execute an immediate migration to WXT for build/dev/package orchestration and TypeScript for source code.
-- Preserve existing domain/app/ui/infra boundaries; change tooling and typing, not business behavior.
-- Use WXT config as the manifest source of truth, with browser-specific overrides per target.
-- Keep dual-browser outputs (`dist/chrome` and `dist/firefox`) so both can be tested concurrently.
-- Keep migration incremental and behavior-preserving, validated by tests and browser smoke checks.
-
-Detailed implementation plan:
-
-See `design/phase_6_wxt_migration.md` for milestones, acceptance criteria, workflow, risk handling, and PR breakdown.
-
-Note on manifest filenames:
-
-- Browser runtimes require the manifest filename to be exactly `manifest.json`.
-- Concurrent Chrome + Firefox testing is achieved via separate output directories, not custom manifest filenames.
-
-## Testing strategy after migration
-
-- Domain unit tests (pure logic): grouping, duplicate detection, closable rules.
-- App integration tests with mocked gateways/repositories: command behavior.
-- Lightweight UI tests for presenter and renderer snapshots.
-
-## Naming conventions
-
-- Commands: verb_noun (`close_group.js`, `move_domain.js`).
-- Queries: `get_*` (`get_tabs_snapshot.js`).
-- Repositories: `*_repository.js`.
-- Gateways: `*_gateway.js`.
-- Presenters/renderers/controllers keep explicit suffix names.
-
-## Practical notes for this project
-
-- Keep `tabregistry` code as inspiration only; do not include it in runtime paths.
-- Preserve current templates and styling until architecture split is complete.
-- Prefer message contracts over importing background internals into tabs page code.
-- Keep third-party versions explicit through `package.json` and `package-lock.json`.
-- WXT + TypeScript migration is now an active phase and should follow `design/phase_6_wxt_migration.md`.
-
-## Definition of done for the refactor
-
-- `tabs/tabs.js` is mostly wiring.
-- Background owns browser lifecycle listeners.
-- Domain modules are browser-agnostic and testable.
-- Repositories/gateways are the only place with browser API calls.
-- UI rendering path is presenter -> renderer with clear boundaries.
+- `js/infra/repositories/state_repository.ts`
+  - owns persisted state for groups, mapping, and locked URLs via storage.local
+- `js/infra/browser/tabs_gateway.ts`
+  - tabs API wrapper for get/query/update/remove/move
+- `js/infra/browser/windows_gateway.ts`
+  - windows API wrapper for get/create/update
+- `js/tabs_service.ts`
+  - tab snapshot retrieval and per-tab metadata access
+  - uses sessions API when available, with storage-backed fallback logic
+
+### UI Layer
+
+- `js/ui/controllers/tabs_page_controller.ts`
+  - wires click handlers, runtime subscriptions, and snapshot refresh
+  - sends command messages to background
+- `js/ui/controllers/drag_drop_controller.ts`
+  - drag-and-drop interaction wiring
+- `js/ui/controllers/keyboard_controller.ts`
+  - keyboard shortcuts and focus behavior
+- `js/ui/presenters/tabs_presenter.ts`
+  - transforms tabs and state into render-ready view model
+- `js/ui/renderers/tabs_renderer.ts`
+  - renders Mustache templates into DOM regions
+
+## Message Contract
+
+Typed contracts are defined in `js/shared/contracts.ts`.
+
+Request message types:
+
+- command:add_group
+- command:ungroup
+- command:move_domain
+- command:toggle_lock
+- command:close_group
+- command:extract_group
+- query:get_tabs_snapshot
+
+Request envelope fields:
+
+- type
+- payload
+- optional requestId
+
+Response envelope fields:
+
+- ok true with result
+- ok false with error code and message
+- optional requestId in both success and error responses
+
+State invalidation event:
+
+- type: state_changed
+- payload includes source, reason, timestamp, changedTabIds
+- payload can include extra metadata, for example title in title update events
+
+## Runtime Flows
+
+### UI Command Flow
+
+1. User action is captured by a UI controller in `js/ui/controllers/tabs_page_controller.ts`.
+2. Controller sends command:* message to background.
+3. Background dispatches to an app command through `js/app/message_router.ts`.
+4. Command updates repositories and/or browser resources.
+5. Background emits state_changed.
+6. UI requests query:get_tabs_snapshot and rerenders.
+
+### Background Lifecycle Flow
+
+1. Browser tab/window event is received in `js/background.ts`.
+2. Background updates tab access metadata if needed.
+3. Background emits state_changed through `js/shared/background_notify.ts`.
+4. Tabs page receives invalidation and refreshes from query snapshot.
+
+### Snapshot Query Flow
+
+1. UI sends query:get_tabs_snapshot.
+2. `js/app/queries/get_tabs_snapshot.ts` loads persistent state and current tabs.
+3. Presenter builds a TabsViewModel.
+4. UI renderer renders grouped and filtered output.
+
+## Data Ownership
+
+- Persistent grouping state:
+  - groups
+  - mapping
+  - lockedUrls
+  - owned by `js/infra/repositories/state_repository.ts`
+- Per-tab metadata:
+  - lastUpdatedOrAccessed
+  - accessed via `js/tabs_service.ts`
+- Filter UI state:
+  - held on the tabs page by `js/filters.ts`
+
+## Dependency Rules
+
+Allowed direction:
+
+- UI -> App
+- App -> Domain
+- App -> Infrastructure
+- App -> Shared
+- Infrastructure -> Shared
+- Background entrypoint -> App plus Shared
+
+Forbidden direction:
+
+- Domain -> browser APIs
+- Domain -> DOM
+- Renderer -> browser APIs
+- Controllers -> repositories directly
+
+## Why These Decisions
+
+- Background owns lifecycle listeners:
+  Keeps a single source of truth for tab/window events and avoids duplicated event handling across pages.
+- Message-based UI/background contract:
+  Decouples UI from background internals and makes command/query behavior easy to test with typed payloads.
+- Layered split (UI, app, domain, infra):
+  Keeps business rules independent from browser APIs and DOM concerns, which reduces regression risk during changes.
+- Presenter + renderer separation:
+  Presenter shapes data once; renderer focuses only on DOM/template output. This keeps rendering logic simple.
+- Repository + gateway adapters:
+  Browser and storage access are isolated, so command behavior can be tested with mocks instead of full extension runtime.
+- Query-based refresh after state_changed:
+  UI receives invalidation events and fetches a fresh snapshot, which prevents stale incremental client state.
+- Typed contracts in shared module:
+  Request/response/event payloads stay explicit and consistent across layers as features evolve.
+
+## Trade-offs
+
+- More modules and message plumbing:
+  The architecture introduces additional files and indirection compared with a single-runtime script.
+- Slightly higher latency on UI actions:
+  Commands go through runtime messaging and then trigger a query refresh, which can be slower than direct local mutation.
+- Strong boundaries require discipline:
+  Keeping domain/browser/UI separation clean takes ongoing review effort during feature work.
+- Snapshot refresh can do extra work:
+  Fetching full state after invalidation is robust but may recompute more than strictly necessary for small changes.
+- Better long-term maintainability:
+  The added structure improves testability, reduces coupling, and makes cross-browser behavior easier to reason about.
+
+## Build and Packaging
+
+- WXT is the single build and manifest source in `wxt.config.ts`.
+- Entry bundles are defined through `entrypoints/background.ts` and `entrypoints/tabs/main.ts`.
+- Runtime dependencies are managed in package.json and locked in package-lock.json.
+
+## Testing Strategy
+
+Tests are organized by layer under `tests`:
+
+- Domain logic tests
+- App command/query and router tests
+- Infra adapter and repository tests
+- UI presenter/renderer/controller tests
+- Background runtime behavior tests
+- Shared utility and filter behavior tests
+
+This structure keeps business logic and runtime messaging testable without full browser end-to-end coupling.
+
+## Contributor Guidance
+
+When adding or changing behavior:
+
+1. Put business decisions in app or domain modules.
+2. Keep browser API calls in infrastructure adapters or background runtime.
+3. Keep tabs page focused on interaction and rendering.
+4. Extend contracts in `js/shared/contracts.ts` before adding new message types.
+5. Prefer query-driven refresh after background invalidation events.
+6. Use `js/shared/logger.ts` for debug output so logs can be enabled or disabled without code changes.
