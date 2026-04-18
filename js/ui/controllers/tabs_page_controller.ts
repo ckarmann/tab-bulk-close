@@ -2,6 +2,7 @@ import Filters from '../../filters.ts'
 import renderTabsView from '../renderers/tabs_renderer.ts'
 import { initDragDropController } from './drag_drop_controller.ts'
 import { initKeyboardController } from './keyboard_controller.ts'
+import logger from '../../shared/logger.ts'
 
 async function dispatchCommandAndRefresh(message: object, errorPrefix: string): Promise<void> {
     try {
@@ -107,7 +108,7 @@ async function requestSnapshotAndRender(delayMs = 0): Promise<void> {
 
 function initClickHandling(): void {
     document.addEventListener('click', (e: MouseEvent) => {
-        console.log(e)
+        logger.debug('Click event', e)
         const target = e.target as HTMLElement
 
         if (target.id === 'add-group-button') {

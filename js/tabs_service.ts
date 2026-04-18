@@ -1,4 +1,6 @@
-console.log("Tabs service start")
+import logger from './shared/logger.ts'
+
+logger.debug('Tabs service initialized')
 
 interface BrowserTab {
     id: number
@@ -30,21 +32,19 @@ interface EnrichedTab extends BrowserTab {
 }
 
 const _tabStatePolyfill: TabPolyfill = (() => {
-    const log = true
-
     if ((browser.sessions as any)?.getTabValue !== undefined) {
         return {
             getTabValue(tab: BrowserTab, key: string) {
                 return (browser.sessions as any).getTabValue(tab.id!, key)
             },
             setTabValue(tab: BrowserTab, key: string, value: unknown) {
-                if (log) console.log(`setTabValue for tab ${tab.id}: ${key} = ${value}`)
+                logger.debug(`setTabValue for tab ${tab.id}: ${key} = ${value}`)
                 return (browser.sessions as any).setTabValue(tab.id!, key, value as any)
             }
         }
     }
 
-    if (log) console.log("Initialize tab registry.")
+    logger.debug('Initialize tab registry')
 
     const registry: {
         current: Record<string, TabState>
@@ -58,7 +58,7 @@ const _tabStatePolyfill: TabPolyfill = (() => {
 
     function write(): void {
         browser.storage.local.set({ TabRegistry: registry.current })
-        if (log) console.info('Registry written to storage.', JSON.parse(JSON.stringify(registry.current)))
+        logger.debug('Registry written to storage', JSON.parse(JSON.stringify(registry.current)))
     }
 
     function setRegistryEntry(tab: BrowserTab, tabKey: string): TabState {
@@ -93,25 +93,25 @@ const _tabStatePolyfill: TabPolyfill = (() => {
         }
 
         if (matched !== null) {
-            if (log) console.info(`Matched tabid:${tab.id} to ${matched.tabId}`)
+            logger.debug(`Matched tabid:${tab.id} to ${matched.tabId}`)
             const tabState = setRegistryEntry(tab, tabKey)
             tabState.dict = matched.dict
         } else {
-            if (log) console.warn(`Unmatched tabid:${tab.id}`)
+            logger.debug(`Unmatched tabid:${tab.id}`)
         }
     }
 
     const initPromise = browser.storage.local.get("TabRegistry")
         .then(items => {
             registry.previous = (items as any).TabRegistry || {}
-            if (log) console.info("Previous sessions's registry retrieved from storage. ", JSON.parse(JSON.stringify(registry.previous)))
+            logger.debug('Previous session registry retrieved from storage', JSON.parse(JSON.stringify(registry.previous)))
             return browser.tabs.query({})
                 .then(tabs => {
-                    if (log) console.info("Start matching tabs")
+                    logger.debug('Start matching tabs')
                     for (const tab of tabs) {
                         matchTab(tab as unknown as BrowserTab)
                     }
-                    if (log) console.info("Finished matching tabs")
+                    logger.debug('Finished matching tabs')
                 })
         })
 
@@ -119,7 +119,7 @@ const _tabStatePolyfill: TabPolyfill = (() => {
         const tabKey = `tabState-${tab.id}`
 
         if (!(tabKey in registry.current)) {
-            if (log) console.log("In Get, Wait for init to finish.")
+            logger.debug('In getTabValue, waiting for init to finish')
             await initPromise
         }
 
@@ -133,15 +133,15 @@ const _tabStatePolyfill: TabPolyfill = (() => {
         const tabKey = `tabState-${tab.id}`
 
         if (!(tabKey in registry.current)) {
-            if (log) console.log("In getTabFromRegistryToWrite, Wait for init to finish.")
+            logger.debug('In getTabFromRegistryToWrite, waiting for init to finish')
             await initPromise
         }
 
         if (tabKey in registry.current) {
-            if (log) console.log(`Pick old state for ${tab.id}`)
+            logger.debug(`Pick old state for ${tab.id}`)
             return registry.current[tabKey]
         }
-        if (log) console.log(`Create new state for ${tab.id}`)
+        logger.debug(`Create new state for ${tab.id}`)
         return setRegistryEntry(tab, tabKey)
     }
 
@@ -152,7 +152,7 @@ const _tabStatePolyfill: TabPolyfill = (() => {
     }
 
     function onCreated(tab: any): void {
-        if (log) console.log(`XX - In onCreated for ${tab.id}`)
+        logger.debug(`onCreated for ${tab.id}`)
         updateTabAsync(tab)
     }
 
@@ -170,13 +170,13 @@ const _tabStatePolyfill: TabPolyfill = (() => {
     }
 
     function onUpdatedOrLoad(_tabId: number, _info: unknown, tab: any): void {
-        if (log) console.log(`XX - In onUpdatedOrLoad for ${_tabId}`)
-        if (log) console.info('Tab updated', tab)
+        logger.debug(`onUpdatedOrLoad for ${_tabId}`)
+        logger.debug('Tab updated', tab)
         updateTabAsync(tab)
     }
 
     function updateTabIndexes(): void {
-        if (log) console.log("XX - In updateTabIndexes")
+        logger.debug('updateTabIndexes')
         for (const tabState of Object.values(registry.current)) {
             browser.tabs.get(tabState.tabId)
                 .then(tab => {
@@ -190,11 +190,11 @@ const _tabStatePolyfill: TabPolyfill = (() => {
     }
 
     function onRemoved(tabId: number): void {
-        if (log) console.log(`XX - In onRemoved for ${tabId}`)
+        logger.debug(`onRemoved for ${tabId}`)
     }
 
     function onReplaced(tabId: number): void {
-        if (log) console.log(`XX - In onReplaced for ${tabId}`)
+        logger.debug(`onReplaced for ${tabId}`)
     }
 
     browser.tabs.onCreated.addListener(onCreated as any)

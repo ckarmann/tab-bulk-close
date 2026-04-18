@@ -87,3 +87,26 @@ Then load the extension from `.output/chrome-mv3/` or `.output/firefox-mv3/` as 
 - Runtime libraries are managed via npm dependencies in `package.json`.
 - Version pinning is enforced by `package-lock.json`.
 
+## Debug Logging
+
+Most runtime debug logs are routed through `js/shared/logger.ts` and are off by default.
+
+Enable debug logs in extension contexts from the browser console:
+
+```js
+globalThis.__TABCLOSER_DEBUG__ = true
+```
+
+Persist debug logs across reloads in page contexts:
+
+```js
+localStorage.setItem('tabcloser:debug', '1')
+```
+
+Disable again:
+
+```js
+globalThis.__TABCLOSER_DEBUG__ = false
+localStorage.setItem('tabcloser:debug', '0')
+```
+

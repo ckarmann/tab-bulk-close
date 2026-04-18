@@ -1,5 +1,6 @@
 import { matchesActiveFilters } from './shared/filter_state.ts'
 import type { ActiveFilters, FilterDescriptor, FilterCheck } from './shared/contracts.ts'
+import logger from './shared/logger.ts'
 
 function getButtonDescriptor(target: Element): FilterDescriptor {
     return {
@@ -19,7 +20,10 @@ function descriptorMatchesButton(descriptor: FilterDescriptor | null | undefined
 }
 
 function turnOnFilter(control: Element, target: Element, state: ActiveFilters): void {
-    console.log("turning on filter for control " + (control as HTMLElement).id + " with button " + (target as HTMLElement).outerHTML)
+    logger.debug('Turning on filter', {
+        controlId: (control as HTMLElement).id,
+        button: (target as HTMLElement).outerHTML,
+    })
     const id = (control as HTMLElement).id
     if (state[id]) {
         const previous = control.querySelector("filter-button.filter-on")
@@ -32,7 +36,7 @@ function turnOnFilter(control: Element, target: Element, state: ActiveFilters): 
 }
 
 function turnOffFilter(control: Element, target: Element, state: ActiveFilters): void {
-    console.log("turning off filter for control " + (control as HTMLElement).id)
+    logger.debug('Turning off filter', { controlId: (control as HTMLElement).id })
     const id = (control as HTMLElement).id
     target.classList.remove("filter-on")
     state[id] = null
@@ -49,7 +53,7 @@ export default {
             }
 
             if (target) {
-                console.log("filter button clicked: " + (target as HTMLElement).outerHTML)
+                logger.debug('Filter button clicked', { button: (target as HTMLElement).outerHTML })
                 const control = target.closest("filter-control")
                 if (target.classList.contains("filter-on")) {
                     turnOffFilter(control!, target, this.state)
@@ -77,7 +81,7 @@ export default {
     },
 
     filter(object: Record<string, unknown>): boolean {
-        console.log("filtering object " + JSON.stringify(object) + " with state " + JSON.stringify(this.state))
+        logger.debug('Applying filters', { object, state: this.state })
         return matchesActiveFilters(object, this.state)
     }
 }

@@ -2,6 +2,7 @@ import { getDayjs } from '../shared/dayjs_runtime'
 import { matchesActiveFilters } from '../shared/filter_state'
 import { findDuplicateTabs } from './tab_duplicates'
 import type { ActiveFilters } from '../shared/contracts'
+import logger from '../shared/logger'
 
 export interface EnrichableTab {
     id?: number
@@ -35,7 +36,7 @@ export function enrichTabs(
     isLockedFunc: (url: string) => boolean,
     activeFilters: ActiveFilters = {},
 ): void {
-    console.log('Enriching tabs')
+    logger.debug('Enriching tabs')
     for (const tab of tabs) {
         tab.urlWithoutHash = getUrlWithoutHash(tab.url)
         tab.locked = isLockedFunc(tab.url)

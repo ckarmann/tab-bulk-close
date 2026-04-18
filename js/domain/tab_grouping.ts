@@ -1,3 +1,5 @@
+import logger from '../shared/logger'
+
 export interface UrlTab {
     url: string
     [key: string]: unknown
@@ -11,7 +13,7 @@ export function cleanMapping(mapping: DomainGroupMapping, groups: string[]): voi
     for (const domain of Object.keys(mapping)) {
         const group = mapping[domain]
         if (!groups.includes(group)) {
-            console.log('Mapping lost: ' + domain + ' => ' + group)
+            logger.debug(`Mapping removed: ${domain} => ${group}`)
             delete mapping[domain]
         }
     }

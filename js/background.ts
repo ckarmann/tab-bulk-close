@@ -1,7 +1,8 @@
 import { notifyStateChanged } from './shared/background_notify.ts'
 import routeMessage from './app/message_router.ts'
+import logger from './shared/logger.ts'
 
-console.log("Starting")
+logger.debug('Background runtime started')
 
 async function markTabAccessTime(tab: { id?: number }): Promise<void> {
     await (browser.sessions as any).setTabValue(tab.id!, "lastUpdatedOrAccessed", Date.now())
@@ -39,7 +40,7 @@ browser.runtime.onMessage.addListener((message: any) => {
 })
 
 browser.tabs.onCreated.addListener((tab) => {
-    console.log(`The tab with id: ${tab.id}, is being created.`)
+    logger.debug(`Tab created: ${tab.id}`)
     notifyStateChanged('tab_created', { changedTabIds: [tab.id!] })
 })
 
@@ -48,7 +49,7 @@ browser.tabs.onRemoved.addListener((tabId, _removeInfo) => {
 })
 
 browser.tabs.onActivated.addListener(async (activeInfo) => {
-    console.log(`onActivated: ${JSON.stringify(activeInfo)}`)
+    logger.debug('Tab activated', activeInfo)
     try {
         const tabId = activeInfo.tabId
         const tab = await browser.tabs.get(tabId)
@@ -60,7 +61,7 @@ browser.tabs.onActivated.addListener(async (activeInfo) => {
 })
 
 browser.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
-    console.log(`Tab with id: ${tabId} had change: ${JSON.stringify(changeInfo)}. active=${tab.active}`)
+    logger.debug(`Tab updated: ${tabId}`, changeInfo, { active: tab.active })
     try {
         if ("title" in changeInfo) {
             await notifyStateChanged('tab_updated_title', { changedTabIds: [tabId], title: changeInfo.title })
@@ -82,7 +83,7 @@ browser.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 })
 
 browser.windows.onFocusChanged.addListener(async (windowId) => {
-    console.log(`The window ${windowId} is focused. Last one was ${lastFocusedWindow}.`)
+    logger.debug(`Window focus changed to ${windowId}. Previous: ${lastFocusedWindow}`)
     try {
         if (windowId !== -1 && lastFocusedWindow !== windowId) {
             const tabs = await browser.tabs.query({
@@ -91,7 +92,7 @@ browser.windows.onFocusChanged.addListener(async (windowId) => {
             })
 
             if (tabs.length === 0) {
-                console.debug("No active tabs in window " + windowId)
+                logger.debug(`No active tabs in window ${windowId}`)
             } else {
                 lastFocusedWindow = windowId
                 await markTabAccessTime(tabs[0])

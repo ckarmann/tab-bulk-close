@@ -1,5 +1,5 @@
 import '../../css/normalize.css'
-import '../../tabs/tabs.css'
+import '../../css/tabs.css'
 
 import '../../js/shared/browser_polyfill.ts'
 
