@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <link rel="icon" type="image/x-icon" href="/icons/close48.png">
+</head>
+
+<body>
+    <div class="panel">
+        <div class="panel-section panel-section-header">
+            <div class="text-section-header">
+                <h1>Tab closer</h1></div>
+        </div>
+
+        <label for="add-group-name">Group name:</label>
+        <input type="text" id="add-group-name" name="add-group-name"> 
+        <button id="add-group-button">Add a group</button>
+
+        <div id="tab-groups"></div>
+    </div>
+    <div class="panel panel-top-drop">
+        <div id="drop-groups-shortcuts"></div>
+    </div>
+    <div class="panel panel-filters">
+        <filter-control id="filter-duplicates">
+            <filter-button attributes="duplicate">duplicate</filter-button>
+        </filter-control>
+        <filter-control id="filter-pinned">
+            <filter-button attributes="pinned">pinned</filter-button>
+            <filter-button attributes="locked">locked</filter-button>
+            <filter-button attributes="pinned,locked" check="negative">unlocked</filter-button>
+        </filter-control>
+        <filter-control id="filter-dates">
+            <filter-button attributes="dayFilter" filter-value="today">today</filter-button>
+            <filter-button attributes="dayFilter" filter-value="yesterday">yesterday</filter-button>
+            <filter-button attributes="dayFilter" filter-value="thisWeek">this week</filter-button>
+            <filter-button attributes="dayFilter" filter-value="thisMonth">this month</filter-button>
+            <filter-button attributes="dayFilter" filter-value="older">older</filter-button>
+        </filter-control>
+        <filter-control id="filter-windows">
+        </filter-control>
+    </div>
+
+    <script type="module" src="./main.ts"></script>
+</body>
+
+</html>

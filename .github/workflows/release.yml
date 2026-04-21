@@ -1,0 +1,63 @@
+name: Release Artifacts
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-package:
+    name: Build and Package
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify quality gates
+        run: |
+          npm run compile
+          npm test
+
+      - name: Build both targets
+        run: |
+          npm run build
+          npm run build:chrome
+
+      - name: Create zip packages
+        run: |
+          set -e
+          mkdir -p release-artifacts
+
+          npm run zip
+          cp .output/tabcloser-*-firefox.zip release-artifacts/
+          cp .output/tabcloser-*-sources.zip release-artifacts/tabcloser-firefox-sources.zip
+
+          npm run zip:chrome
+          cp .output/tabcloser-*-chrome.zip release-artifacts/
+          cp .output/tabcloser-*-sources.zip release-artifacts/tabcloser-chrome-sources.zip
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: extension-release-artifacts
+          path: release-artifacts/*.zip
+
+      - name: Publish to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release-artifacts/*.zip

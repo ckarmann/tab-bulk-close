@@ -1,0 +1,46 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+describe('background boot runtime safety', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        vi.resetModules()
+
+        globalThis.browser = {
+            runtime: {
+                getURL: vi.fn(() => 'moz-extension://id/tabs.html'),
+                sendMessage: vi.fn().mockResolvedValue(undefined),
+                onMessage: { addListener: vi.fn() },
+            },
+            action: {
+                onClicked: { addListener: vi.fn() },
+            },
+            tabs: {
+                onCreated: { addListener: vi.fn() },
+                onRemoved: { addListener: vi.fn() },
+                onActivated: { addListener: vi.fn() },
+                onUpdated: { addListener: vi.fn() },
+                query: vi.fn().mockResolvedValue([]),
+                get: vi.fn().mockResolvedValue({ id: 1, active: true }),
+                update: vi.fn(),
+                create: vi.fn(),
+            },
+            windows: {
+                update: vi.fn(),
+                onFocusChanged: { addListener: vi.fn() },
+            },
+            sessions: {
+                setTabValue: vi.fn().mockResolvedValue(undefined),
+            },
+            storage: {
+                local: {
+                    get: vi.fn().mockResolvedValue({ groups: ['Others'], mapping: {}, lockedUrls: [] }),
+                    set: vi.fn().mockResolvedValue(undefined),
+                },
+            },
+        }
+    })
+
+    it('imports background module without dayjs globals', async () => {
+        await expect(import('/js/background.ts')).resolves.toBeTruthy()
+    })
+})

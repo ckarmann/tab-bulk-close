@@ -1,0 +1,32 @@
+{
+  "name": "tabcloser",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wxt -b firefox",
+    "dev:chrome": "wxt -b chrome",
+    "build": "wxt build -b firefox",
+    "build:chrome": "wxt build -b chrome",
+    "zip": "wxt zip -b firefox",
+    "zip:chrome": "wxt zip -b chrome",
+    "lint:html": "htmlhint \"entrypoints/**/*.html\"",
+    "compile": "tsc --noEmit",
+    "postinstall": "wxt prepare",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
+  },
+  "devDependencies": {
+    "@types/mustache": "^4.2.6",
+    "@types/webextension-polyfill": "^0.12.5",
+    "@vitest/coverage-v8": "^3.2.4",
+    "htmlhint": "^1.9.2",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4",
+    "wxt": "^0.20.20"
+  },
+  "dependencies": {
+    "dayjs": "^1.11.20",
+    "mustache": "^4.2.0",
+    "webextension-polyfill": "^0.12.0"
+  }
+}
