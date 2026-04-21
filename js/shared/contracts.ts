@@ -50,7 +50,6 @@ export interface ExtractGroupPayload {
 }
 
 export interface GetTabsSnapshotPayload {
-  activeFilters?: ActiveFilters
 }
 
 export type RequestPayload =
@@ -117,48 +116,44 @@ export interface StateChangedMessage {
   payload: StateChangedPayload
 }
 
-export interface WindowViewModel {
+export interface WindowModel {
   id: number
-  windowColor: string
   tabCount: number
 }
 
-export interface TabViewItem {
+export interface TabItemModel {
   id: number
   url: string
   title?: string
   pinned?: boolean
   locked?: boolean
   duplicate?: boolean
-  filtered?: boolean
-  windowId?: number
-  windowColor?: string
+  windowId: number
   lastAccessedFriendly?: string
   lastAccessedString?: string
   lastAccessedColor?: string
   dayFilter?: string
-  [key: string]: unknown
 }
 
-export interface DomainViewModel {
+export interface DomainModel {
   name: string
   id: string
-  items: TabViewItem[]
+  items: TabItemModel[]
 }
 
-export interface GroupViewModel {
+export interface GroupModel {
   name: string
   id: string
-  info: string
+  tabCount: number
   isOthers: boolean
-  subgroups: DomainViewModel[]
+  subgroups: DomainModel[]
 }
 
-export interface TabsViewModel {
-  groups: GroupViewModel[]
-  windows: WindowViewModel[]
+export interface TabsModel {
+  groups: GroupModel[]
+  windows: WindowModel[]
 }
 
 export interface GetTabsSnapshotResult {
-  viewModel: TabsViewModel
+  tabsModel: TabsModel
 }

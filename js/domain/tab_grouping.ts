@@ -1,8 +1,10 @@
 import logger from '../shared/logger'
+import { EnrichableTab, enrichTabs } from "./tab_enrichment"
+import type { StateData, TabsModel } from '../shared/contracts'
+
 
 export interface UrlTab {
     url: string
-    [key: string]: unknown
 }
 
 export type DomainGroupMapping = Record<string, string>
@@ -95,6 +97,72 @@ export function isTabInGroup(
     return mapping[domain] === groupName
 }
 
+export function buildTabsModel(
+    tabs: EnrichableTab[],
+    stateData: StateData
+): TabsModel {
+    const lockedUrls = stateData?.lockedUrls || []
+    const groups = stateData?.groups || ['Others']
+    const mapping = stateData?.mapping || {}
+
+    // no filter!
+    enrichTabs(tabs, (url: string) => lockedUrls.includes(url));
+
+    const [resolvedGroups, groupMap, domainMap] = applyGrouping(tabs, groups, mapping);
+    const groupObjectList = [];
+    const windowIdMap = new Map<number, { id: number; tabCount: number }>();
+
+    for (let group of resolvedGroups) {
+        const domains = groupMap[group] === undefined ? [] : Object.values(groupMap[group]);
+        let tabCount = 0;
+        const domainObjects: { domain: string; }[] = [];
+
+        for (let domain of domains) {
+            const domainObject = {
+                domain,
+                // filteredCount: 0,
+            };
+            domainObjects.push(domainObject);
+
+            const domainTabs = domainMap[domain];
+            for (let tab of domainTabs) {
+                tabCount++;
+
+                const windowId = tab.windowId!;
+
+                if (!windowIdMap.has(windowId)) {
+                    windowIdMap.set(windowId, {
+                        id: windowId,
+                        tabCount: 1,
+                    });
+                } else {
+                    windowIdMap.get(windowId)!.tabCount += 1;
+                }
+            }
+        }
+
+        groupObjectList.push({
+            name: group,
+            id: group,
+            tabCount: tabCount,
+            isOthers: group === 'Others',
+            subgroups: domainObjects.map((domain) => {
+                return {
+                    name: domain.domain,
+                    id: domain.domain,
+                    items: Object.values(domainMap[domain.domain]),
+                };
+            }),
+        });
+    }
+
+    return {
+        groups: groupObjectList,
+        windows: Array.from(windowIdMap.values()),
+    };
+}
+
+
 export default {
     applyGrouping,
     buildDomainMap,
@@ -103,4 +171,5 @@ export default {
     getDomainFromUrl,
     isTabInGroup,
     moveOthersToEnd,
+    buildTabsModel,
 }

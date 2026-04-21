@@ -1,6 +1,5 @@
 export interface DuplicateComparableTab {
     urlWithoutHash?: string
-    [key: string]: unknown
 }
 
 export function findDuplicateTabs<T extends DuplicateComparableTab>(tabs: T[]): T[] {

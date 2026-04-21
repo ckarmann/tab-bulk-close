@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { enrichTabs } from '/js/domain/tab_enrichment.ts'
 
 describe('tab_enrichment domain', () => {
-    it('enriches tabs with derived fields, duplicate flags, and active-filter result', () => {
+    it('enriches tabs with derived fields and duplicate flags', () => {
         const now = Date.now()
         const tabs = [
             {
@@ -28,13 +28,7 @@ describe('tab_enrichment domain', () => {
 
         const isLocked = (url) => url.includes('b.example')
 
-        enrichTabs(tabs, isLocked, {
-            'filter-duplicates': {
-                attributes: 'duplicate',
-                check: null,
-                filterValue: null,
-            },
-        })
+        enrichTabs(tabs, isLocked)
 
         expect(tabs[0].urlWithoutHash).toBe('https://a.example/path')
         expect(tabs[0].locked).toBe(false)
@@ -48,13 +42,9 @@ describe('tab_enrichment domain', () => {
         expect(tabs[0].duplicate).toBe(true)
         expect(tabs[1].duplicate).toBe(true)
         expect(tabs[2].duplicate).toBeUndefined()
-
-        expect(tabs[0].filtered).toBe(true)
-        expect(tabs[1].filtered).toBe(true)
-        expect(tabs[2].filtered).toBe(false)
     })
 
-    it('defaults to filtered=true when no active filter is provided', () => {
+    it('does not set UI-only filtered flags', () => {
         const tabs = [
             {
                 id: 11,
@@ -66,6 +56,6 @@ describe('tab_enrichment domain', () => {
 
         enrichTabs(tabs, () => false)
 
-        expect(tabs[0].filtered).toBe(true)
+        expect(tabs[0].filtered).toBeUndefined()
     })
 })

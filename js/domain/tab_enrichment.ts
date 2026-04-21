@@ -1,17 +1,15 @@
 import { getDayjs } from '../shared/dayjs_runtime'
-import { matchesActiveFilters } from '../shared/filter_state'
 import { findDuplicateTabs } from './tab_duplicates'
-import type { ActiveFilters } from '../shared/contracts'
 import logger from '../shared/logger'
+import dayjs from 'dayjs'
 
 export interface EnrichableTab {
-    id?: number
+    id: number
     url: string
     title?: string
     pinned?: boolean
     locked?: boolean
     duplicate?: boolean
-    filtered?: boolean
     today?: boolean
     dayFilter?: string
     timeValue?: number
@@ -20,7 +18,7 @@ export interface EnrichableTab {
     lastAccessedString?: string
     lastAccessedColor?: string
     urlWithoutHash?: string
-    [key: string]: unknown
+    windowId: number
 }
 
 const dayjsApi = getDayjs()
@@ -34,7 +32,6 @@ function getUrlWithoutHash(url: string): string {
 export function enrichTabs(
     tabs: EnrichableTab[],
     isLockedFunc: (url: string) => boolean,
-    activeFilters: ActiveFilters = {},
 ): void {
     logger.debug('Enriching tabs')
     for (const tab of tabs) {
@@ -42,7 +39,7 @@ export function enrichTabs(
         tab.locked = isLockedFunc(tab.url)
 
         let accessedTimeColor: string
-        let accessedTime: any
+        let accessedTime: dayjs.Dayjs
         if (tab.timeValue !== undefined) {
             accessedTime = dayjsApi(tab.timeValue)
             accessedTimeColor = 'black'
@@ -75,7 +72,6 @@ export function enrichTabs(
         if (duplicateTabs.includes(tab)) {
             tab.duplicate = true
         }
-        tab.filtered = matchesActiveFilters(tab, activeFilters)
     }
 }
 

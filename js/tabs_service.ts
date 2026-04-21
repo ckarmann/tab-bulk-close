@@ -27,8 +27,8 @@ interface TabPolyfill {
     setTabValue(tab: BrowserTab, key: string, value: unknown): Promise<void>
 }
 
-interface EnrichedTab extends BrowserTab {
-    timeValue?: unknown
+export interface TabWithTimeValue extends BrowserTab {
+    timeValue?: number
 }
 
 const _tabStatePolyfill: TabPolyfill = (() => {
@@ -211,12 +211,12 @@ const _tabStatePolyfill: TabPolyfill = (() => {
 })()
 
 export default {
-    getAllTabs(): Promise<EnrichedTab[]> {
-        function getTabTime(tab: BrowserTab): Promise<EnrichedTab> {
+    getAllTabs(): Promise<TabWithTimeValue[]> {
+        function getTabTime(tab: BrowserTab): Promise<TabWithTimeValue> {
             return _tabStatePolyfill.getTabValue(tab, "lastUpdatedOrAccessed")
                 .then((lastUpdatedOrAccessed) => {
-                    const enriched = tab as EnrichedTab
-                    enriched.timeValue = lastUpdatedOrAccessed
+                    const enriched = tab as TabWithTimeValue
+                    enriched.timeValue = lastUpdatedOrAccessed as number
                     return enriched
                 })
         }

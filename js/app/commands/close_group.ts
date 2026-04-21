@@ -1,11 +1,12 @@
 import stateRepository from '../../infra/repositories/state_repository'
 import TabsService from '../../tabs_service.ts'
-import Filters from '../../filters.js'
+import Filters from '../../filters.ts'
 import TabsGateway from '../../infra/browser/tabs_gateway'
 import { matchesActiveFilters } from '../../shared/filter_state'
 import { enrichTabs } from '../../domain/tab_enrichment'
 import { isTabInGroup } from '../../domain/tab_grouping'
 import type { ActiveFilters } from '../../shared/contracts'
+import type { TabWithTimeValue } from '../../tabs_service'
 
 interface CloseGroupInput {
     groupName?: string
@@ -13,7 +14,7 @@ interface CloseGroupInput {
     stateRepository?: {
         loadState: () => Promise<{ lockedUrls: string[]; mapping: Record<string, string> }>
     }
-    tabsService?: { getAllTabs: () => Promise<Array<Record<string, unknown>>> }
+    tabsService?: { getAllTabs: () => Promise<TabWithTimeValue[]> }
     filters?: { state?: ActiveFilters; filter?: (tab: Record<string, unknown>) => boolean }
     tabsGateway?: { remove: (tabId: number) => Promise<unknown> }
     onChanged?: () => void
@@ -34,14 +35,13 @@ export default async function closeGroupCommand({
 
     const stateData = await repository.loadState()
     const tabs = await tabsService.getAllTabs()
-    const enrichableTabs = tabs as Array<{ id: number; url: string; pinned?: boolean } & Record<string, unknown>>
 
-    enrichTabs(enrichableTabs, (url) => stateData.lockedUrls.includes(url))
+    enrichTabs(tabs, (url) => stateData.lockedUrls.includes(url))
 
     const filterState = activeFilters !== undefined ? activeFilters : (filters?.state || {})
 
     let closedCount = 0
-    for (const tab of enrichableTabs) {
+    for (const tab of tabs) {
         const urlString = tab.url
 
         const matchesFilter = activeFilters === undefined && typeof filters?.filter === 'function'

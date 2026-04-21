@@ -1,4 +1,5 @@
 import Filters from '../../filters.ts'
+import buildTabsView from '../presenters/tabs_presenter.ts'
 import renderTabsView from '../renderers/tabs_renderer.ts'
 import { initDragDropController } from './drag_drop_controller.ts'
 import { initKeyboardController } from './keyboard_controller.ts'
@@ -93,13 +94,11 @@ async function requestSnapshotAndRender(delayMs = 0): Promise<void> {
     try {
         const response = await browser.runtime.sendMessage({
             type: 'query:get_tabs_snapshot',
-            payload: {
-                activeFilters: Filters.state || {},
-            },
+            payload: {},
         })
 
-        if (response?.ok && response?.result?.viewModel) {
-            renderTabsView(response.result.viewModel)
+        if (response?.ok && response?.result?.tabsModel) {
+            renderTabsView(buildTabsView(response.result.tabsModel, Filters.state || {}))
         }
     } catch (error) {
         console.error('Failed to fetch tabs snapshot:', error)

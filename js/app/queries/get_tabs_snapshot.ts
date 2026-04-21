@@ -1,17 +1,14 @@
 import TabsService from '../../tabs_service.ts'
 import stateRepository from '../../infra/repositories/state_repository'
-import buildTabsViewModel from '../../ui/presenters/tabs_presenter.ts'
+import { buildTabsModel } from '../../domain/tab_grouping.ts'
 import type { GetTabsSnapshotPayload, GetTabsSnapshotResult } from '../../shared/contracts'
 
 export default async function getTabsSnapshotQuery(
-    payload: GetTabsSnapshotPayload = {},
+    _: GetTabsSnapshotPayload = {},
 ): Promise<GetTabsSnapshotResult> {
     const stateData = await stateRepository.loadState()
     const tabs = await TabsService.getAllTabs()
-    const activeFilters = payload?.activeFilters && typeof payload.activeFilters === 'object'
-        ? payload.activeFilters
-        : {}
-    const viewModel = buildTabsViewModel(tabs, stateData, activeFilters)
+    const tabsModel = buildTabsModel(tabs, stateData)
 
-    return { viewModel }
+    return { tabsModel }
 }

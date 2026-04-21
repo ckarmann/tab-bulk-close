@@ -1,6 +1,6 @@
 import Filters from '../../filters.ts'
 import Mustache from 'mustache'
-import type { TabsViewModel } from '../../shared/contracts'
+import type { TabsViewModel } from '../presenters/tabs_presenter.ts'
 import groupTemplate from '../templates/group-template.mustache?raw'
 import shortcutTemplate from '../templates/group-shortcut-template.mustache?raw'
 import windowFilterTemplate from '../templates/window-filter-template.mustache?raw'

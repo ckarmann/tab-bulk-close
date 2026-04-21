@@ -119,9 +119,7 @@ async function loadTabsAndCaptureMessageListener() {
 describe('tabs runtime message flow', () => {
     const snapshotRequestMatcher = {
         type: 'query:get_tabs_snapshot',
-        payload: expect.objectContaining({
-            activeFilters: expect.any(Object),
-        }),
+        payload: {},
     }
 
     beforeEach(() => {

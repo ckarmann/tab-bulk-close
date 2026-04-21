@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
     applyGrouping,
+    buildTabsModel,
     buildDomainMap,
     classifyDomains,
     cleanMapping,
@@ -113,5 +114,60 @@ describe('tab_grouping domain', () => {
         expect(isTabInGroup('https://a.example/path', 'Work', mapping)).toBe(true)
         expect(isTabInGroup('https://a.example/path', 'Others', mapping)).toBe(false)
         expect(isTabInGroup('about:config', 'Others', mapping)).toBe(false)
+    })
+
+    it('builds tabs model with enriched tabs, grouped domains, and window counts', () => {
+        const tabs = [
+            {
+                id: 1,
+                url: 'https://work.example/a#x',
+                title: 'work-a',
+                windowId: 5,
+                timeValue: Date.now(),
+            },
+            {
+                id: 2,
+                url: 'https://work.example/a#y',
+                title: 'work-b',
+                windowId: 5,
+                timeValue: Date.now(),
+            },
+            {
+                id: 3,
+                url: 'https://other.example/c',
+                title: 'other',
+                windowId: 2,
+                timeValue: Date.now(),
+            },
+        ]
+        const stateData = {
+            groups: ['Work', 'Others'],
+            mapping: {
+                'work.example': 'Work',
+            },
+            lockedUrls: ['https://work.example/a#x'],
+        }
+
+        const model = buildTabsModel(tabs, stateData)
+
+        expect(model.groups.map((group) => group.name)).toEqual(['Work', 'Others'])
+        expect(model.groups[0].tabCount).toBe(2)
+        expect(model.groups[1].tabCount).toBe(1)
+        expect(model.groups[0].subgroups[0].name).toBe('work.example')
+        expect(model.groups[1].subgroups[0].name).toBe('other.example')
+        expect(model.windows).toEqual([
+            { id: 5, tabCount: 2 },
+            { id: 2, tabCount: 1 },
+        ])
+
+        const groupedTabs = model.groups.flatMap((group) =>
+            group.subgroups.flatMap((domain) => domain.items),
+        )
+        const tabById = new Map(groupedTabs.map((tab) => [tab.id, tab]))
+
+        expect(tabById.get(1)?.locked).toBe(true)
+        expect(tabById.get(2)?.locked).toBe(false)
+        expect(tabById.get(1)?.duplicate).toBe(true)
+        expect(tabById.get(2)?.duplicate).toBe(true)
     })
 })

@@ -1,6 +1,49 @@
-import { enrichTabs } from '../../domain/tab_enrichment'
-import { applyGrouping } from '../../domain/tab_grouping'
-import type { ActiveFilters, StateData, TabViewItem, TabsViewModel } from '../../shared/contracts'
+import { matchesActiveFilters } from '../../shared/filter_state'
+import type { ActiveFilters, TabsModel } from '../../shared/contracts'
+
+
+export interface WindowViewModel {
+  id: number
+  windowColor: string
+  tabCount: number
+}
+
+export interface TabViewItem {
+  id: number
+  url: string
+  title?: string
+  pinned?: boolean
+  locked?: boolean
+  duplicate?: boolean
+  filtered: boolean
+  windowId?: number
+  windowColor?: string
+  lastAccessedFriendly?: string
+  lastAccessedString?: string
+  lastAccessedColor?: string
+  dayFilter?: string
+}
+
+export interface DomainViewModel {
+  name: string
+  id: string
+  items: TabViewItem[]
+}
+
+export interface GroupViewModel {
+  name: string
+  id: string
+  tabCount: number
+  info: string
+  isOthers: boolean
+  subgroups: DomainViewModel[]
+}
+
+export interface TabsViewModel {
+  groups: GroupViewModel[]
+  windows: WindowViewModel[]
+}
+
 
 // from https://sashamaps.net/docs/resources/20-colors/
 // (Accessibility:99%)
@@ -20,74 +63,46 @@ function attributeWindowColor(windowId: number): string {
     return newColor;
 }
 
-export default function buildTabsViewModel(tabs: TabViewItem[], stateData: StateData, activeFilters: ActiveFilters = {}): TabsViewModel {
-    const lockedUrls = stateData?.lockedUrls || []
-    const groups = stateData?.groups || ['Others']
-    const mapping = stateData?.mapping || {}
+export default function buildTabsView(tabsModel: TabsModel, activeFilter: ActiveFilters): TabsViewModel {
 
-    enrichTabs(tabs, (url: string) => lockedUrls.includes(url), activeFilters);
+    const groups = tabsModel.groups.map(group => ({
+            ...group,
+            info: '', // calculated later.
+            subgroups: group.subgroups
+            .map(domain => ({
+                ...domain,
+                items: domain.items
+                .map(tab => ({
+                    ...tab,
+                    windowColor: attributeWindowColor(tab.windowId!),
+                    filtered: matchesActiveFilters(tab, activeFilter),
+                }))
+                .filter(tab => tab.filtered)
+                .sort((a, b) => a.url.localeCompare(b.url))
+            }))
+            .filter(domain => domain.items.length > 0)
+            .sort((a, b) => a.name.localeCompare(b.name))
+        }))
 
-    const [resolvedGroups, groupMap, domainMap] = applyGrouping(tabs, groups, mapping);
-    const groupObjectList = [];
-    const windowIdMap = new Map<number, { id: number; windowColor: string; tabCount: number }>();
-
-    for (let group of resolvedGroups) {
-        const domains = groupMap[group] === undefined ? [] : Object.values(groupMap[group]);
-        let tabCount = 0;
+    groups.forEach(group => {
         let closableCount = 0;
-        const domainObjects: { domain: string; filteredCount: number }[] = [];
-
-        for (let domain of domains) {
-            const domainObject = {
-                domain,
-                filteredCount: 0,
-            };
-            domainObjects.push(domainObject);
-
-            const domainTabs = domainMap[domain];
-            for (let tab of domainTabs) {
-                tabCount++;
-                if (tab.filtered) {
-                    domainObject.filteredCount++;
-                    if (!(tab.pinned || lockedUrls.includes(tab.url))) {
-                        closableCount++;
-                    }
-                }
-
-                const windowId = tab.windowId!;
-                const windowColor = attributeWindowColor(windowId);
-                tab.windowColor = windowColor;
-
-                if (!windowIdMap.has(windowId)) {
-                    windowIdMap.set(windowId, {
-                        id: windowId,
-                        windowColor,
-                        tabCount: 1,
-                    });
-                } else {
-                    windowIdMap.get(windowId)!.tabCount += 1;
+        for (const domain of group.subgroups) {
+            for (const tab of domain.items) {
+                if (!(tab.pinned || tab.locked)) {
+                    closableCount++;
                 }
             }
         }
-
-        groupObjectList.push({
-            name: group,
-            id: group,
-            info: closableCount + '/' + tabCount,
-            isOthers: group == 'Others',
-            subgroups: domainObjects.filter((domain) => domain.filteredCount > 0).map((domain) => {
-                return {
-                    name: domain.domain,
-                    id: domain.domain,
-                    items: Object.values(domainMap[domain.domain]).filter((tab) => tab.filtered).sort((a, b) => a.url.localeCompare(b.url)),
-                };
-            }),
-        });
-    }
-
-    const sortedWinMap = new Map([...windowIdMap.entries()].sort());
+        group.info = `${closableCount}/${group.tabCount}`;
+    })
+    
     return {
-        groups: groupObjectList,
-        windows: Array.from(sortedWinMap.values()),
-    };
+        groups,
+        windows: tabsModel.windows
+            .toSorted((a, b) => a.id - b.id)
+            .map(window => ({
+                ...window,
+                windowColor: attributeWindowColor(window.id),
+            }))
+    }
 }

@@ -1,7 +1,7 @@
 import type { ActiveFilters } from './contracts.ts'
 
 export function matchesActiveFilters(
-    object: Record<string, unknown>,
+    object: Record<string, any>,
     activeFilters: ActiveFilters = {},
 ): boolean {
     for (const filter of Object.values(activeFilters)) {
