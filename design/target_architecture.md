@@ -20,16 +20,21 @@ Both runtimes communicate through runtime messages with typed contracts defined 
 
 ## Source Layout
 
-Current structure:
+Files are organized by the runtime they belong to, then by layer within that runtime.
 
-- Build and entrypoints:
-  - `wxt.config.ts`
-  - `entrypoints/background.ts`
-  - `entrypoints/tabs/index.html`
-  - `entrypoints/tabs/main.ts`
-- Background runtime:
-  - `js/background.ts`
-- App layer:
+### Build entrypoints (not runtime code)
+
+- `wxt.config.ts` — build and manifest configuration
+- `entrypoints/background.ts` — boots polyfills and starts the background runtime
+- `entrypoints/tabs/index.html` — tabs page shell
+- `entrypoints/tabs/main.ts` — boots styles, polyfills, and starts the tabs page runtime
+
+### Background runtime
+
+All of the following runs exclusively in the background service worker:
+
+- `js/background.ts` — lifecycle listeners, message handler registration
+- App layer (`js/app/`):
   - `js/app/message_router.ts`
   - `js/app/commands/add_group.ts`
   - `js/app/commands/ungroup.ts`
@@ -38,18 +43,23 @@ Current structure:
   - `js/app/commands/close_group.ts`
   - `js/app/commands/extract_group.ts`
   - `js/app/queries/get_tabs_snapshot.ts`
-- Domain layer:
+- Domain layer (`js/domain/`):
   - `js/domain/tab_grouping.ts`
   - `js/domain/tab_enrichment.ts`
   - `js/domain/tab_duplicates.ts`
-- Infrastructure layer:
+- Infrastructure layer (`js/infra/`):
   - `js/infra/repositories/state_repository.ts`
   - `js/infra/browser/tabs_gateway.ts`
   - `js/infra/browser/windows_gateway.ts`
-  - `js/tabs_service.ts`
-- UI layer:
-  - `tabs/tabs.ts`
-  - `css/tabs.css`
+- `js/tabs_service.ts` — tab snapshot retrieval and per-tab metadata, used by app queries
+
+### Tabs page runtime (UI)
+
+All of the following runs exclusively in the tabs page:
+
+- `tabs/tabs.ts` — page wiring entrypoint, delegates to controllers
+- `css/tabs.css` — page styles
+- UI layer (`js/ui/`):
   - `js/ui/controllers/tabs_page_controller.ts`
   - `js/ui/controllers/drag_drop_controller.ts`
   - `js/ui/controllers/keyboard_controller.ts`
@@ -58,13 +68,18 @@ Current structure:
   - `js/ui/templates/group-template.mustache`
   - `js/ui/templates/group-shortcut-template.mustache`
   - `js/ui/templates/window-filter-template.mustache`
-- Shared utilities and contracts:
-  - `js/shared/contracts.ts`
-  - `js/shared/background_notify.ts`
-  - `js/shared/browser_polyfill.ts`
-  - `js/shared/dayjs_runtime.ts`
-  - `js/shared/filter_state.ts`
-  - `js/filters.ts`
+- `js/filters.ts` — active filter state, owned by the tabs page
+
+### Shared (both runtimes)
+
+These modules are imported by both the background and the tabs page:
+
+- `js/shared/contracts.ts` — typed message/event envelopes
+- `js/shared/background_notify.ts` — state_changed event emitter
+- `js/shared/browser_polyfill.ts` — cross-browser polyfill loader
+- `js/shared/dayjs_runtime.ts` — date formatting helpers
+- `js/shared/filter_state.ts` — filter type definitions
+- `js/shared/logger.ts` — toggleable debug logger
 
 ## Layer Responsibilities
 
@@ -74,7 +89,7 @@ Current structure:
 - `entrypoints/tabs/main.ts` boots styles, polyfills, and tabs UI runtime.
 - `tabs/tabs.ts` is the tabs page wiring entrypoint and delegates to controllers.
 
-### Background Layer
+### Background Layer (background runtime)
 
 - `js/background.ts` registers:
   - browser action click handler
@@ -82,7 +97,7 @@ Current structure:
   - tab and window lifecycle listeners
 - Lifecycle listeners emit state_changed invalidation events through `js/shared/background_notify.ts`.
 
-### App Layer
+### App Layer (background runtime)
 
 - `js/app/message_router.ts` validates incoming request envelopes and dispatches handlers.
 - Command handlers implement use cases:
@@ -90,7 +105,7 @@ Current structure:
 - Query handler builds snapshot responses:
   - `js/app/queries/get_tabs_snapshot.ts`
 
-### Domain Layer
+### Domain Layer (background runtime)
 
 Pure logic modules without DOM access:
 
@@ -98,7 +113,7 @@ Pure logic modules without DOM access:
 - `js/domain/tab_enrichment.ts`: computed tab fields
 - `js/domain/tab_duplicates.ts`: duplicate detection helpers
 
-### Infrastructure Layer
+### Infrastructure Layer (background runtime)
 
 Browser and persistence adapters:
 
@@ -112,7 +127,7 @@ Browser and persistence adapters:
   - tab snapshot retrieval and per-tab metadata access
   - uses sessions API when available, with storage-backed fallback logic
 
-### UI Layer
+### UI Layer (tabs page runtime)
 
 - `js/ui/controllers/tabs_page_controller.ts`
   - wires click handlers, runtime subscriptions, and snapshot refresh
