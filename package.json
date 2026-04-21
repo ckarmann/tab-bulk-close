@@ -10,7 +10,8 @@
     "zip": "wxt zip -b firefox",
     "zip:chrome": "wxt zip -b chrome",
     "lint:html": "htmlhint \"entrypoints/**/*.html\"",
-    "compile": "tsc --noEmit",
+    "compile": "tsc --noEmit && npm run lint:arch",
+    "lint:arch": "depcruise --config .dependency-cruiser.cjs js entrypoints tabs",
     "postinstall": "wxt prepare",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage"
@@ -19,6 +20,7 @@
     "@types/mustache": "^4.2.6",
     "@types/webextension-polyfill": "^0.12.5",
     "@vitest/coverage-v8": "^3.2.4",
+    "dependency-cruiser": "^17.3.10",
     "htmlhint": "^1.9.2",
     "typescript": "^5.9.3",
     "vitest": "^3.2.4",
