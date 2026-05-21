@@ -6,6 +6,7 @@ type BackgroundListeners = {
     onCreated?: (tab: any) => Promise<void>
     onActivated?: (activeInfo: any) => Promise<void>
     onUpdated?: (tabId: number, changeInfo: any, tab: any) => Promise<void>
+    onReplaced?: (addedTabId: number, removedTabId: number) => Promise<void>
     onFocusChanged?: (windowId: number) => Promise<void>
 }
 
@@ -65,6 +66,11 @@ export async function loadBackgroundAndCaptureListeners(spies: HarnessSpies): Pr
             onUpdated: {
                 addListener: vi.fn((listener: BackgroundListeners['onUpdated']) => {
                     listeners.onUpdated = listener
+                }),
+            },
+            onReplaced: {
+                addListener: vi.fn((listener: BackgroundListeners['onReplaced']) => {
+                    listeners.onReplaced = listener
                 }),
             },
             query: spies.tabsQuerySpy

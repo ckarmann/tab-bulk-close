@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { TabTimestampsModel } from '/js/shared/contracts.ts'
 
-const { getTabValueSpy, setTabValueSpy } = vi.hoisted(() => ({
+const { getTabValueSpy, setTabValueSpy, tabsGetSpy } = vi.hoisted(() => ({
     getTabValueSpy: vi.fn(),
     setTabValueSpy: vi.fn(),
+    tabsGetSpy: vi.fn(),
 }))
 
 vi.mock('/js/tabs_service.ts', () => ({
@@ -30,7 +31,7 @@ async function loadTouchTab() {
             onActivated: { addListener: vi.fn() },
             onUpdated: { addListener: vi.fn() },
             query: vi.fn().mockResolvedValue([]),
-            get: vi.fn(),
+            get: (...args: any[]) => tabsGetSpy(...args),
             update: vi.fn(),
             create: vi.fn(),
         },
@@ -67,6 +68,8 @@ describe('touchTab', () => {
         vi.clearAllMocks()
         vi.useFakeTimers()
         vi.setSystemTime(2000)
+        tabsGetSpy.mockReset()
+        tabsGetSpy.mockResolvedValue({ id: 42 })
         setTabValueSpy.mockResolvedValue(undefined)
     })
 
@@ -74,8 +77,26 @@ describe('touchTab', () => {
         vi.useRealTimers()
     })
 
-    it('initializes timestamps when none exist', async () => {
+    it('initializes timestamps from tab.lastAccessed when available', async () => {
         getTabValueSpy.mockResolvedValue(undefined)
+        tabsGetSpy.mockResolvedValue({ id: 42, lastAccessed: 1500 })
+        const touchTab = await loadTouchTab()
+
+        await touchTab(42, 'activated')
+
+        expect(tabsGetSpy).toHaveBeenCalledWith(42)
+        expect(setTabValueSpy).toHaveBeenCalledWith(42, 'timestamps', {
+            lastSeenAt: 1500,
+            lastContentChangeAt: 1500,
+            lastUsedAt: 1500,
+            lastUsedReason: 'fallback_lastAccessed',
+            lastEventAt: 2000,
+        })
+    })
+
+    it('initializes timestamps with Date.now when lastAccessed is missing', async () => {
+        getTabValueSpy.mockResolvedValue(undefined)
+        tabsGetSpy.mockResolvedValue({ id: 42 })
         const touchTab = await loadTouchTab()
 
         await touchTab(42, 'activated')

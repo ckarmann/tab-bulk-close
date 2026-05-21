@@ -9,6 +9,12 @@ logger.debug('Background runtime started')
 
 const UPDATE_COALESCE_WINDOW_MS = 750
 
+type TabsWithOptionalOnReplaced = typeof browser.tabs & {
+    onReplaced?: {
+        addListener: (listener: (addedTabId: number, removedTabId: number) => void | Promise<void>) => void
+    }
+}
+
 function getUpdateReasonPriority(reason: UsageReason): number {
     switch (reason) {
         case 'url_changed':
@@ -36,8 +42,17 @@ async function touchTab(tabId: number, reason: UsageReason, isActive: boolean = 
     const now = Date.now()
 
     if (typeof tabTimestamps === 'undefined') {
-        logger.debug(`No timestamp for tab ${tabId}, setting current time as initial timestamp`)
-        const initTimestamps = makeTimestamps(now, now, reason, now)
+        logger.debug(`No timestamp for tab ${tabId}, initializing timestamps`)
+        const tab = await browser.tabs.get(tabId)
+        const fallbackLastAccessed =
+            typeof tab.lastAccessed === 'number' && tab.lastAccessed > 0
+                ? tab.lastAccessed
+                : undefined
+
+        const initTimestamps = typeof fallbackLastAccessed === 'number'
+            ? makeTimestamps(fallbackLastAccessed, fallbackLastAccessed, 'fallback_lastAccessed', now)
+            : makeTimestamps(now, now, reason, now)
+
         await tabs_service.setTabValue(tabId, 'timestamps', initTimestamps)
         return
     }
@@ -78,7 +93,7 @@ async function touchTab(tabId: number, reason: UsageReason, isActive: boolean = 
 }
 
 let lastFocusedWindow = -1
-const TABS_PAGE_PATH = 'tabs.html'
+const TABS_PAGE_PATH = '/tabs.html'
 
 function openTab(): void {
     const page_url = browser.runtime.getURL(TABS_PAGE_PATH as any)
@@ -153,6 +168,26 @@ browser.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
         console.error('Failed to handle tabs.onUpdated:', error)
     }
 })
+
+const tabsApi = browser.tabs as TabsWithOptionalOnReplaced
+
+if (tabsApi.onReplaced) {
+    tabsApi.onReplaced.addListener(async (addedTabId: number, removedTabId: number) => {
+        logger.debug(`Tab replaced: removed ${removedTabId}, added ${addedTabId}`)
+        try {
+            const replacedTabTimestamps = await tabs_service.getTabValue(removedTabId, 'timestamps') as TabTimestampsModel | undefined
+            if (typeof replacedTabTimestamps === 'undefined') {
+                logger.debug(`No timestamps found for replaced tab ${removedTabId}`)
+                return
+            }
+
+            await tabs_service.setTabValue(addedTabId, 'timestamps', { ...replacedTabTimestamps })
+            await notifyStateChanged('tab_updated', { changedTabIds: [addedTabId] })
+        } catch (error) {
+            console.error('Failed to handle tabs.onReplaced:', error)
+        }
+    })
+}
 
 browser.windows.onFocusChanged.addListener(async (windowId) => {
     logger.debug(`Window focus changed to ${windowId}. Previous: ${lastFocusedWindow}`)
