@@ -121,6 +121,22 @@ export interface WindowModel {
   tabCount: number
 }
 
+export type UsageReason = 'activated' | 'focus_changed' | 'url_changed' | 'load_complete' | 'created' | 'fallback_lastAccessed'
+
+export interface TabTimestampsModel {
+  // The last time (epoch, ms) the tab was accessed (activated or focused)
+  lastSeenAt: number
+  // The last time (epoch, ms) the tab's content was changed (URL change or page load)
+  lastContentChangeAt: number
+  // Value derived from the above timestamps to represent the last meaningful interaction time. (epoch, ms)
+  lastUsedAt: number
+  // The reason for the lastUsedAt value
+  lastUsedReason: UsageReason
+  // Last update timestamp (epoch, ms) to support event coalescing.
+  lastEventAt: number
+  
+}
+
 export interface TabItemModel {
   id: number
   url: string

@@ -1,75 +1,23 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { loadBackgroundAndCaptureListeners } from '/tests/background/helpers/background_listener_harness.ts'
 
 const {
-    tabsGetSpy,
-    tabsQuerySpy,
+    getTabValueSpy,
     setTabValueSpy,
     runtimeSendMessageSpy,
 } = vi.hoisted(() => ({
-    tabsGetSpy: vi.fn(),
-    tabsQuerySpy: vi.fn(),
+    getTabValueSpy: vi.fn(),
     setTabValueSpy: vi.fn(),
     runtimeSendMessageSpy: vi.fn(),
 }))
 
-async function loadBackgroundAndCaptureListeners() {
-    vi.resetModules()
-
-    tabsGetSpy.mockReset()
-    tabsGetSpy.mockResolvedValue({ id: 10, active: true })
-    tabsQuerySpy.mockReset()
-    tabsQuerySpy.mockResolvedValue([])
-    setTabValueSpy.mockReset()
-    setTabValueSpy.mockResolvedValue(undefined)
-    runtimeSendMessageSpy.mockReset()
-    runtimeSendMessageSpy.mockResolvedValue(undefined)
-
-    const listeners = {}
-
-    globalThis.browser = {
-        runtime: {
-            getURL: vi.fn(() => 'moz-extension://id/tabs.html'),
-            sendMessage: (...args) => runtimeSendMessageSpy(...args),
-            onMessage: {
-                addListener: vi.fn(),
-            },
-        },
-        action: {
-            onClicked: { addListener: vi.fn() },
-        },
-        tabs: {
-            onCreated: { addListener: vi.fn() },
-            onRemoved: { addListener: vi.fn() },
-            onActivated: { addListener: vi.fn() },
-            onUpdated: {
-                addListener: vi.fn((listener) => {
-                    listeners.onUpdated = listener
-                }),
-            },
-            query: (...args) => tabsQuerySpy(...args),
-            get: (...args) => tabsGetSpy(...args),
-            update: vi.fn(),
-            create: vi.fn(),
-        },
-        windows: {
-            update: vi.fn(),
-            onFocusChanged: {
-                addListener: vi.fn((listener) => {
-                    listeners.onFocusChanged = listener
-                }),
-            },
-        },
-        sessions: {
-            setTabValue: (...args) => setTabValueSpy(...args),
-        },
-    }
-
-    await import('/js/background.ts')
-
-    expect(typeof listeners.onUpdated).toBe('function')
-    expect(typeof listeners.onFocusChanged).toBe('function')
-    return listeners
-}
+vi.mock('/js/tabs_service.ts', () => ({
+    default: {
+        getTabValue: (...args: any[]) => getTabValueSpy(...args),
+        setTabValue: (...args: any[]) => setTabValueSpy(...args),
+        getAllTabs: vi.fn(),
+    },
+}))
 
 describe('background tabs.onUpdated handling', () => {
     beforeEach(() => {
@@ -77,7 +25,12 @@ describe('background tabs.onUpdated handling', () => {
     })
 
     it('emits title update and one tab_updated for active tab url+complete', async () => {
-        const { onUpdated } = await loadBackgroundAndCaptureListeners()
+        const { onUpdated } = await loadBackgroundAndCaptureListeners({
+            getTabValueSpy,
+            setTabValueSpy,
+            runtimeSendMessageSpy,
+        })
+        expect(typeof onUpdated).toBe('function')
 
         await onUpdated(
             10,
@@ -85,9 +38,12 @@ describe('background tabs.onUpdated handling', () => {
             { id: 10, active: true }
         )
 
-        expect(tabsGetSpy).toHaveBeenCalledTimes(1)
-        expect(tabsGetSpy).toHaveBeenCalledWith(10)
+        expect(getTabValueSpy).toHaveBeenCalledTimes(1)
+        expect(getTabValueSpy).toHaveBeenCalledWith(10, 'timestamps')
         expect(setTabValueSpy).toHaveBeenCalledTimes(1)
+        expect(setTabValueSpy).toHaveBeenCalledWith(10, 'timestamps', expect.any(Object))
+        const updatedPayload = setTabValueSpy.mock.calls[0][2]
+        expect(updatedPayload.lastUsedReason).toBe('url_changed')
         expect(runtimeSendMessageSpy).toHaveBeenCalledTimes(2)
 
         const reasons = runtimeSendMessageSpy.mock.calls.map((args) => args[0].payload.reason)
@@ -102,8 +58,68 @@ describe('background tabs.onUpdated handling', () => {
         })
     })
 
+    it('emits title update but does not write timestamps for title-only updates', async () => {
+        const { onUpdated } = await loadBackgroundAndCaptureListeners({
+            getTabValueSpy,
+            setTabValueSpy,
+            runtimeSendMessageSpy,
+        })
+        expect(typeof onUpdated).toBe('function')
+
+        await onUpdated(
+            13,
+            { title: 'Title only change' },
+            { id: 13, active: false }
+        )
+
+        expect(getTabValueSpy).not.toHaveBeenCalled()
+        expect(setTabValueSpy).not.toHaveBeenCalled()
+        expect(runtimeSendMessageSpy).toHaveBeenCalledTimes(1)
+        expect(runtimeSendMessageSpy.mock.calls[0][0]).toMatchObject({
+            type: 'state_changed',
+            payload: {
+                reason: 'tab_updated_title',
+                changedTabIds: [13],
+                title: 'Title only change',
+            },
+        })
+    })
+
+    it('uses load_complete reason when status complete arrives without url change', async () => {
+        const { onUpdated } = await loadBackgroundAndCaptureListeners({
+            getTabValueSpy,
+            setTabValueSpy,
+            runtimeSendMessageSpy,
+        })
+        expect(typeof onUpdated).toBe('function')
+
+        await onUpdated(
+            14,
+            { status: 'complete' },
+            { id: 14, active: true }
+        )
+
+        expect(getTabValueSpy).toHaveBeenCalledWith(14, 'timestamps')
+        expect(setTabValueSpy).toHaveBeenCalledTimes(1)
+        const updatedPayload = setTabValueSpy.mock.calls[0][2]
+        expect(updatedPayload.lastUsedReason).toBe('load_complete')
+        expect(runtimeSendMessageSpy).toHaveBeenCalledTimes(1)
+        expect(runtimeSendMessageSpy.mock.calls[0][0]).toMatchObject({
+            type: 'state_changed',
+            payload: {
+                reason: 'tab_updated',
+                changedTabIds: [14],
+            },
+        })
+    })
+
     it('does not mark access or emit tab_updated for inactive tab url changes', async () => {
-        const { onUpdated } = await loadBackgroundAndCaptureListeners()
+        const { onUpdated } = await loadBackgroundAndCaptureListeners({
+            getTabValueSpy,
+            setTabValueSpy,
+            runtimeSendMessageSpy,
+        })
+        expect(typeof onUpdated).toBe('function')
 
         await onUpdated(
             11,
@@ -111,15 +127,26 @@ describe('background tabs.onUpdated handling', () => {
             { id: 11, active: false }
         )
 
-        expect(tabsGetSpy).not.toHaveBeenCalled()
         expect(setTabValueSpy).not.toHaveBeenCalled()
         expect(runtimeSendMessageSpy).not.toHaveBeenCalled()
     })
 
     it('logs and swallows errors from tabs api during update handling', async () => {
-        const { onUpdated } = await loadBackgroundAndCaptureListeners()
+        const { onUpdated } = await loadBackgroundAndCaptureListeners({
+            getTabValueSpy,
+            setTabValueSpy,
+            runtimeSendMessageSpy,
+        })
+        expect(typeof onUpdated).toBe('function')
         const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-        tabsGetSpy.mockRejectedValue(new Error('tabs.get failed'))
+        getTabValueSpy.mockResolvedValue({
+            lastSeenAt: 1,
+            lastContentChangeAt: 1,
+            lastUsedAt: 1,
+            lastUsedReason: 'activated',
+            lastEventAt: 0,
+        })
+        setTabValueSpy.mockRejectedValue(new Error('setTabValue failed'))
 
         await expect(
             onUpdated(12, { url: 'https://example.com' }, { id: 12, active: true })
@@ -127,67 +154,6 @@ describe('background tabs.onUpdated handling', () => {
 
         expect(errorSpy).toHaveBeenCalledWith(
             'Failed to handle tabs.onUpdated:',
-            expect.any(Error)
-        )
-    })
-})
-
-describe('background windows.onFocusChanged handling', () => {
-    beforeEach(() => {
-        vi.clearAllMocks()
-    })
-
-    it('marks active tab and emits tab_activated when focused window changes', async () => {
-        const { onFocusChanged } = await loadBackgroundAndCaptureListeners()
-        tabsQuerySpy.mockResolvedValue([{ id: 77, active: true }])
-
-        await onFocusChanged(5)
-
-        expect(tabsQuerySpy).toHaveBeenCalledWith({ windowId: 5, active: true })
-        expect(setTabValueSpy).toHaveBeenCalledTimes(1)
-        expect(setTabValueSpy).toHaveBeenCalledWith(77, 'lastUpdatedOrAccessed', expect.any(Number))
-        expect(runtimeSendMessageSpy).toHaveBeenCalledTimes(1)
-        expect(runtimeSendMessageSpy.mock.calls[0][0]).toMatchObject({
-            type: 'state_changed',
-            payload: {
-                reason: 'tab_activated',
-                changedTabIds: [77],
-            },
-        })
-    })
-
-    it('ignores repeated focus on the same window', async () => {
-        const { onFocusChanged } = await loadBackgroundAndCaptureListeners()
-        tabsQuerySpy.mockResolvedValue([{ id: 88, active: true }])
-
-        await onFocusChanged(9)
-        await onFocusChanged(9)
-
-        expect(tabsQuerySpy).toHaveBeenCalledTimes(1)
-        expect(runtimeSendMessageSpy).toHaveBeenCalledTimes(1)
-    })
-
-    it('ignores browser blur event and windows with no active tabs', async () => {
-        const { onFocusChanged } = await loadBackgroundAndCaptureListeners()
-        tabsQuerySpy.mockResolvedValue([])
-
-        await onFocusChanged(-1)
-        await onFocusChanged(12)
-
-        expect(tabsQuerySpy).toHaveBeenCalledTimes(1)
-        expect(runtimeSendMessageSpy).not.toHaveBeenCalled()
-        expect(setTabValueSpy).not.toHaveBeenCalled()
-    })
-
-    it('logs and swallows errors during focus change handling', async () => {
-        const { onFocusChanged } = await loadBackgroundAndCaptureListeners()
-        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-        tabsQuerySpy.mockRejectedValue(new Error('tabs.query failed'))
-
-        await expect(onFocusChanged(13)).resolves.toBeUndefined()
-
-        expect(errorSpy).toHaveBeenCalledWith(
-            'Failed to handle windows.onFocusChanged:',
             expect.any(Error)
         )
     })

@@ -72,8 +72,8 @@ describe('tabs_service (sessions API branch)', () => {
         const tabsService = await loadTabsServiceWithSessionsApi()
         const tab = { id: 21 }
 
-        const value = await tabsService.getTabValue(tab, 'foo')
-        await tabsService.setTabValue(tab, 'foo', 123)
+        const value = await tabsService.getTabValue(tab.id, 'foo')
+        await tabsService.setTabValue(tab.id, 'foo', 123)
 
         expect(value).toBe('foo-21')
         expect(browser.sessions.getTabValue).toHaveBeenCalledWith(21, 'foo')
@@ -83,7 +83,7 @@ describe('tabs_service (sessions API branch)', () => {
     it('falls back to registry mode when browser.sessions is unavailable', async () => {
         const tabsService = await loadTabsServiceWithoutSessionsApi()
 
-        const value = await tabsService.getTabValue({ id: 99 }, 'missing')
+        const value = await tabsService.getTabValue(99, 'missing')
 
         expect(value).toBeUndefined()
         expect(browser.storage.local.get).toHaveBeenCalledWith('TabRegistry')

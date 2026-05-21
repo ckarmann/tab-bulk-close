@@ -23,8 +23,8 @@ interface TabState {
 }
 
 interface TabPolyfill {
-    getTabValue(tab: BrowserTab, key: string): Promise<unknown>
-    setTabValue(tab: BrowserTab, key: string, value: unknown): Promise<void>
+    getTabValue(tabId: number, key: string): Promise<unknown>
+    setTabValue(tabId: number, key: string, value: unknown): Promise<void>
 }
 
 export interface TabWithTimeValue extends BrowserTab {
@@ -32,14 +32,15 @@ export interface TabWithTimeValue extends BrowserTab {
 }
 
 const _tabStatePolyfill: TabPolyfill = (() => {
+    
     if ((browser.sessions as any)?.getTabValue !== undefined) {
         return {
-            getTabValue(tab: BrowserTab, key: string) {
-                return (browser.sessions as any).getTabValue(tab.id!, key)
+            getTabValue(tabId: number, key: string) {
+                return (browser.sessions as any).getTabValue(tabId, key)
             },
-            setTabValue(tab: BrowserTab, key: string, value: unknown) {
-                logger.debug(`setTabValue for tab ${tab.id}: ${key} = ${value}`)
-                return (browser.sessions as any).setTabValue(tab.id!, key, value as any)
+            setTabValue(tabId: number, key: string, value: unknown) {
+                logger.debug(`setTabValue for tab ${tabId}: ${key} = ${value}`)
+                return (browser.sessions as any).setTabValue(tabId, key, value as any)
             }
         }
     }
@@ -115,38 +116,48 @@ const _tabStatePolyfill: TabPolyfill = (() => {
                 })
         })
 
-    async function getTabValue(tab: BrowserTab, key: string): Promise<unknown> {
-        const tabKey = `tabState-${tab.id}`
+    async function getTabRegistryState(tabId: number): Promise<{ tabKey: string, state: TabState | null}> {
+        const tabKey = `tabState-${tabId}`
 
         if (!(tabKey in registry.current)) {
-            logger.debug('In getTabValue, waiting for init to finish')
+            logger.debug('In getTabRegistryState, waiting for init to finish')
             await initPromise
         }
 
         if (tabKey in registry.current) {
-            return registry.current[tabKey].dict[key]
+            return { tabKey: tabKey, state: registry.current[tabKey] }
+        }
+        return { tabKey: tabKey, state: null }
+    }
+
+    async function getTabValue(tabId: number, key: string): Promise<unknown> {
+        const tabState = (await getTabRegistryState(tabId)).state
+        if (tabState) {
+            return tabState.dict[key]
         }
         return undefined
     }
 
     async function getTabFromRegistryToWrite(tab: BrowserTab): Promise<TabState> {
-        const tabKey = `tabState-${tab.id}`
-
-        if (!(tabKey in registry.current)) {
-            logger.debug('In getTabFromRegistryToWrite, waiting for init to finish')
-            await initPromise
-        }
-
-        if (tabKey in registry.current) {
-            logger.debug(`Pick old state for ${tab.id}`)
-            return registry.current[tabKey]
+        const tabKeyAndState = await getTabRegistryState(tab.id)
+        if (tabKeyAndState.state) {
+            return tabKeyAndState.state
         }
         logger.debug(`Create new state for ${tab.id}`)
-        return setRegistryEntry(tab, tabKey)
+        return setRegistryEntry(tab, tabKeyAndState.tabKey)
     }
 
-    async function setTabValue(tab: BrowserTab, key: string, value: unknown): Promise<void> {
-        const tabState = await getTabFromRegistryToWrite(tab)
+    async function setTabValue(tabId: number, key: string, value: unknown): Promise<void> {
+        const tabKeyAndState = await getTabRegistryState(tabId)
+        let tabState = tabKeyAndState.state
+        if (tabState === null) {
+            const tab = await browser.tabs.get(tabId)
+            if (tab.id == null || tab.url == null) {
+                logger.debug(`Error: no tab with id (${tabId})`)
+                return
+            }
+            tabState = setRegistryEntry({ ...tab, id: tab.id, url: tab.url } as BrowserTab, tabKeyAndState.tabKey)
+        }
         tabState.dict[key] = value
         write()
     }
@@ -213,7 +224,7 @@ const _tabStatePolyfill: TabPolyfill = (() => {
 export default {
     getAllTabs(): Promise<TabWithTimeValue[]> {
         function getTabTime(tab: BrowserTab): Promise<TabWithTimeValue> {
-            return _tabStatePolyfill.getTabValue(tab, "lastUpdatedOrAccessed")
+            return _tabStatePolyfill.getTabValue(tab.id, "lastUpdatedOrAccessed")
                 .then((lastUpdatedOrAccessed) => {
                     const enriched = tab as TabWithTimeValue
                     enriched.timeValue = lastUpdatedOrAccessed as number
