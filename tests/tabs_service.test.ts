@@ -7,7 +7,18 @@ async function loadTabsServiceWithSessionsApi() {
 
     globalThis.browser = {
         sessions: {
-            getTabValue: vi.fn(async (tabId, key) => `${key}-${tabId}`),
+            getTabValue: vi.fn(async (tabId, key) => {
+                if (key === 'timestamps') {
+                    return {
+                        lastSeenAt: tabId * 100,
+                        lastContentChangeAt: tabId * 100 - 1,
+                        lastUsedAt: tabId * 100,
+                        lastUsedReason: 'activated',
+                        lastEventAt: tabId * 100,
+                    }
+                }
+                return `${key}-${tabId}`
+            }),
             setTabValue: vi.fn(async () => undefined),
         },
         tabs: {
@@ -62,10 +73,10 @@ describe('tabs_service (sessions API branch)', () => {
         const tabs = await tabsService.getAllTabs()
 
         expect(browser.tabs.query).toHaveBeenCalledWith({})
-        expect(browser.sessions.getTabValue).toHaveBeenNthCalledWith(1, 10, 'lastUpdatedOrAccessed')
-        expect(browser.sessions.getTabValue).toHaveBeenNthCalledWith(2, 11, 'lastUpdatedOrAccessed')
-        expect(tabs[0].timeValue).toBe('lastUpdatedOrAccessed-10')
-        expect(tabs[1].timeValue).toBe('lastUpdatedOrAccessed-11')
+        expect(browser.sessions.getTabValue).toHaveBeenNthCalledWith(1, 10, 'timestamps')
+        expect(browser.sessions.getTabValue).toHaveBeenNthCalledWith(2, 11, 'timestamps')
+        expect(tabs[0].timeValue).toBe(1000)
+        expect(tabs[1].timeValue).toBe(1100)
     })
 
     it('delegates getTabValue and setTabValue to browser.sessions', async () => {

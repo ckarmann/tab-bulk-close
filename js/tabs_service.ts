@@ -1,4 +1,5 @@
 import logger from './shared/logger.ts'
+import type { TabTimestampsModel } from './shared/contracts.ts'
 
 logger.debug('Tabs service initialized')
 
@@ -29,6 +30,21 @@ interface TabPolyfill {
 
 export interface TabWithTimeValue extends BrowserTab {
     timeValue?: number
+}
+
+function isTabTimestampsModel(value: unknown): value is TabTimestampsModel {
+    if (!value || typeof value !== 'object') {
+        return false
+    }
+
+    const candidate = value as Partial<TabTimestampsModel>
+    return (
+        typeof candidate.lastSeenAt === 'number' &&
+        typeof candidate.lastContentChangeAt === 'number' &&
+        typeof candidate.lastUsedAt === 'number' &&
+        typeof candidate.lastUsedReason === 'string' &&
+        typeof candidate.lastEventAt === 'number'
+    )
 }
 
 const _tabStatePolyfill: TabPolyfill = (() => {
@@ -224,10 +240,12 @@ const _tabStatePolyfill: TabPolyfill = (() => {
 export default {
     getAllTabs(): Promise<TabWithTimeValue[]> {
         function getTabTime(tab: BrowserTab): Promise<TabWithTimeValue> {
-            return _tabStatePolyfill.getTabValue(tab.id, "lastUpdatedOrAccessed")
-                .then((lastUpdatedOrAccessed) => {
+            return _tabStatePolyfill.getTabValue(tab.id, 'timestamps')
+                .then((timestamps) => {
                     const enriched = tab as TabWithTimeValue
-                    enriched.timeValue = lastUpdatedOrAccessed as number
+                    if (isTabTimestampsModel(timestamps)) {
+                        enriched.timeValue = timestamps.lastUsedAt
+                    }
                     return enriched
                 })
         }
